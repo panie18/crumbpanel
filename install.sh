@@ -2,7 +2,7 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - TypeORM + SQLite Installation           ║"
+echo "║  CrumbPanel - CLEAN TypeORM Installation              ║"
 echo "║          Made by paulify.dev (https://paulify.eu)     ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
@@ -45,6 +45,23 @@ else
     echo -e "${YELLOW}📥 Pulling latest changes...${NC}"
     git pull
 fi
+
+# AGGRESSIVE CLEANUP - Remove ALL broken files
+echo -e "${YELLOW}🧹 Removing ALL broken backend files...${NC}"
+rm -rf backend/src/audit
+rm -rf backend/src/cloud-backup  
+rm -rf backend/src/files
+rm -rf backend/src/metrics
+rm -rf backend/src/players
+rm -rf backend/src/websocket
+rm -rf backend/src/prisma
+rm -rf backend/prisma
+rm -f backend/src/auth/dto
+rm -f backend/src/auth/guards
+rm -f backend/src/auth/strategies
+rm -f backend/src/servers/dto
+rm -f backend/src/servers/rcon.service.ts
+rm -f backend/src/index.ts
 
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
