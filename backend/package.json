@@ -1,15 +1,11 @@
 {
   "name": "crumbpanel-backend",
   "version": "1.0.0",
-  "description": "CrumbPanel Backend",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "dev": "ts-node-dev --respawn src/main.ts",
-    "prisma:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "node dist/scripts/seed.js"
+    "dev": "ts-node src/main.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -26,10 +22,6 @@
     "@types/node": "^20.12.12",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"
-  },
-  "prisma": {
-    "seed": "node dist/scripts/seed.js"
   }
 }

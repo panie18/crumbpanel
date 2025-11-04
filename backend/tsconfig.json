@@ -1,25 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "es2022",
     "module": "commonjs",
     "rootDir": "src",
     "outDir": "dist",
-    "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./src/types"],
-    "sourceMap": true
+    "strict": true
   },
-  "include": [
-    "src/main.ts",
-    "src/app.ts",
-    "src/prisma.ts",
-    "src/middleware/**/*.ts",
-    "src/routes/**/*.ts",
-    "src/services/**/*.ts",
-    "src/types/**/*.d.ts",
-    "src/scripts/**/*.ts"
-  ],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
