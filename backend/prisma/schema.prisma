@@ -80,9 +80,8 @@ model Metric {
   ramUsage  Float
   players   Int
   tps       Float    @default(20.0)
-  createdAt DateTime @default(now())
 
-  @@index([serverId, timestamp])
+  @@index([serverId, createdAt])
 }
 
 model AuditLog {
