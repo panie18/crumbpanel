@@ -13,7 +13,10 @@ import toast from 'react-hot-toast';
 import { Server, User, Mail, Lock, Palette, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5829/api';
+const isDocker = window.location.hostname !== 'localhost';
+const API_URL = isDocker 
+  ? '/api'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:5829/api');
 
 const PRESET_COLORS = [
 	{ name: 'Classic Black', primary: '#000000', accent: '#ffffff' },
@@ -37,9 +40,25 @@ export default function SetupPage() {
 	const { setAuth } = useAuthStore();
 	const { setCustomColors } = useThemeStore();
 
+	const { data: setupStatus } = useQuery({
+		queryKey: ['setup-status'],
+		queryFn: async () => {
+			try {
+				console.log('Checking setup status at:', `${API_URL}/auth/setup-status`);
+				const response = await axios.get(`${API_URL}/auth/setup-status`);
+				return response.data;
+			} catch (error) {
+				console.error('Setup status check error:', error);
+				return { needsSetup: true };
+			}
+		},
+	});
+
 	const setupMutation = useMutation({
-		mutationFn: (data: { username: string; email: string; password: string }) =>
-			axios.post(`${API_URL}/auth/setup`, data),
+		mutationFn: (data: { username: string; email: string; password: string }) => {
+			console.log('Sending setup request to:', `${API_URL}/auth/setup`);
+			return axios.post(`${API_URL}/auth/setup`, data);
+		},
 		onSuccess: (response) => {
 			console.log('Setup successful:', response.data);
 			const { user, accessToken, refreshToken } = response.data;
@@ -69,19 +88,6 @@ export default function SetupPage() {
 			}
 			
 			toast.error(errorMessage, { duration: 5000 });
-		},
-	});
-
-	// Check if setup is already complete
-	const { data: setupStatus } = useQuery({
-		queryKey: ['setup-status'],
-		queryFn: async () => {
-			try {
-				const response = await axios.get(`${API_URL}/auth/setup-status`);
-				return response.data;
-			} catch (error) {
-				return { needsSetup: true };
-			}
 		},
 	});
 

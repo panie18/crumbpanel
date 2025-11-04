@@ -216,9 +216,27 @@ if [ "$RUNNING_CONTAINERS" -gt 0 ]; then
   echo -e "${GREEN}✓ All services started successfully${NC}"
 else
   echo -e "${RED}✗ Error: Some services failed to start${NC}"
-  echo -e "${YELLOW}Run '$USE_SUDO docker-compose logs' for details${NC}"
+  echo -e "${YELLOW}Showing logs:${NC}"
+  $USE_SUDO docker-compose logs --tail=50
   exit 1
 fi
+
+# Test backend connection
+echo -e "${YELLOW}🔍 Testing backend connection...${NC}"
+for i in {1..30}; do
+  if curl -s http://localhost:5829/api/auth/setup-status > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Backend is responding${NC}"
+    break
+  fi
+  if [ $i -eq 30 ]; then
+    echo -e "${RED}✗ Backend not responding after 60 seconds${NC}"
+    echo -e "${YELLOW}Backend logs:${NC}"
+    $USE_SUDO docker-compose logs backend
+  else
+    echo "Waiting for backend... ($i/30)"
+    sleep 2
+  fi
+done
 
 # Show status
 echo ""

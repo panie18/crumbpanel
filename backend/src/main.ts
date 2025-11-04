@@ -27,7 +27,6 @@ async function waitForDatabase() {
 }
 
 async function bootstrap() {
-  // Wait for database
   const dbReady = await waitForDatabase();
   if (!dbReady) {
     console.error('Cannot start without database connection');
@@ -35,7 +34,17 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule, {
-    cors: true,
+    cors: {
+      origin: [
+        'http://localhost:8437',
+        'http://localhost:3000',
+        'http://frontend',
+        'http://frontend:80',
+      ],
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    },
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 

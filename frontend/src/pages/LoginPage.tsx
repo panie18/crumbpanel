@@ -13,7 +13,10 @@ import toast from 'react-hot-toast';
 import { Server, Eye, EyeOff, Loader2, Sparkles } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5829/api';
+const isDocker = window.location.hostname !== 'localhost';
+const API_URL = isDocker 
+  ? '/api'
+  : (import.meta.env.VITE_API_URL || 'http://localhost:5829/api');
 
 const WELCOME_MESSAGES = [
   "Welcome back! 👋",
@@ -39,6 +42,7 @@ export default function LoginPage() {
     queryKey: ['setup-status'],
     queryFn: async () => {
       try {
+        console.log('Checking setup status at:', `${API_URL}/auth/setup-status`);
         const response = await axios.get(`${API_URL}/auth/setup-status`);
         return response.data;
       } catch (error) {

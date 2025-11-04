@@ -1,12 +1,19 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5829/api';
+// Detect if running in Docker or localhost
+const isDocker = window.location.hostname !== 'localhost';
+const API_URL = isDocker
+  ? '/api' // Use nginx proxy in Docker
+  : (import.meta.env.VITE_API_URL || 'http://localhost:5829/api');
+
+console.log('API URL:', API_URL);
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 seconds timeout
 });
 
 api.interceptors.request.use((config) => {

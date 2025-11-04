@@ -11,14 +11,17 @@ export default defineConfig({
   },
   server: {
     port: 8437,
+    host: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5829',
+        target: 'http://backend:5829',
         changeOrigin: true,
+        secure: false,
       },
       '/socket.io': {
-        target: 'http://localhost:5829',
+        target: 'http://backend:5829',
         ws: true,
+        changeOrigin: true,
       },
     },
   },
