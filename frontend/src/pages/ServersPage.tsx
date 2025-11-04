@@ -5,6 +5,7 @@ import { Plus, RefreshCw } from 'lucide-react';
 import { serversApi } from '@/lib/api';
 import ServerCard from '@/components/ServerCard';
 import CreateServerDialog from '@/components/CreateServerDialog';
+import DashboardWelcome from '@/components/DashboardWelcome';
 import { Button } from '@/components/ui/button';
 
 export default function ServersPage() {
@@ -18,6 +19,9 @@ export default function ServersPage() {
 
   return (
     <div className="space-y-6">
+      {/* Dashboard Welcome */}
+      <DashboardWelcome />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -25,14 +29,14 @@ export default function ServersPage() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-4xl font-bold gradient-text">Servers</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your Minecraft servers
+          <h2 className="text-2xl font-bold">Your Servers</h2>
+          <p className="text-muted-foreground mt-1">
+            Manage and monitor your Minecraft servers
           </p>
         </div>
 
         <div className="flex gap-2">
-          <Button variant="glass" size="icon" onClick={() => refetch()}>
+          <Button variant="ghost" size="icon" onClick={() => refetch()}>
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button onClick={() => setCreateDialogOpen(true)}>

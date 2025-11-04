@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -51,6 +51,26 @@ export default function SetupPage() {
 			toast.error(error.response?.data?.message || 'Setup failed');
 		},
 	});
+
+	// Check if setup is already complete
+	const { data: setupStatus } = useQuery({
+		queryKey: ['setup-status'],
+		queryFn: async () => {
+			try {
+				const response = await axios.get(`${API_URL}/auth/setup-status`);
+				return response.data;
+			} catch (error) {
+				return { needsSetup: true };
+			}
+		},
+	});
+
+	useEffect(() => {
+		// If setup is already complete, redirect to login
+		if (setupStatus?.isSetupComplete === true) {
+			navigate('/login', { replace: true });
+		}
+	}, [setupStatus, navigate]);
 
 	const handleNext = () => {
 		if (step === 1 && !username.trim()) {

@@ -12,11 +12,22 @@ export class AuthService {
   ) {}
 
   async getSetupStatus() {
-    const userCount = await this.prisma.user.count();
-    return {
-      isSetupComplete: userCount > 0,
-      needsSetup: userCount === 0,
-    };
+    try {
+      const userCount = await this.prisma.user.count();
+      console.log('Setup status check - User count:', userCount);
+      return {
+        isSetupComplete: userCount > 0,
+        needsSetup: userCount === 0,
+        userCount,
+      };
+    } catch (error) {
+      console.error('Setup status check failed:', error);
+      return {
+        isSetupComplete: false,
+        needsSetup: true,
+        userCount: 0,
+      };
+    }
   }
 
   async initialSetup(dto: { username: string; email: string; password: string }) {
