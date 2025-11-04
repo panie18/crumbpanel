@@ -10,53 +10,48 @@ services:
     container_name: mc_db
     restart: always
     environment:
-      POSTGRES_USER: mc_admin
-      POSTGRES_PASSWORD: mc_password
-      POSTGRES_DB: mc_panel
+      POSTGRES_USER: ${POSTGRES_USER:-mc_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mc_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mc_panel}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "0.0.0.0:5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mc_admin -d mc_panel"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mc_admin} -d ${POSTGRES_DB:-mc_panel}"]
       interval: 5s
       timeout: 5s
       retries: 20
-    networks:
-      - crumbpanel
+    networks: [crumbpanel]
 
   backend:
     build: ./backend
     container_name: mc_backend
-    restart: unless-stopped
+    env_file: .env
     ports:
-      - "5829:5829"
+      - "0.0.0.0:5829:5829"
     depends_on:
       db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://mc_admin:mc_password@db:5432/mc_panel
-      - JWT_SECRET=crumbpanel_jwt_secret_min32chars_long
-      - JWT_REFRESH_SECRET=crumbpanel_refresh_secret_min32chars
-      - ENCRYPTION_KEY=crumbpanel_encryption_key_16ch
-      - PORT=5829
       - NODE_ENV=production
+      - PORT=5829
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-mc_admin}:${POSTGRES_PASSWORD:-mc_password}@db:5432/${POSTGRES_DB:-mc_panel}
     volumes:
       - ./data/backups:/app/backups
       - ./data/servers:/app/servers
-    networks:
-      - crumbpanel
+    restart: unless-stopped
+    networks: [crumbpanel]
 
   frontend:
     build: ./frontend
     container_name: mc_frontend
-    restart: unless-stopped
     ports:
-      - "8437:80"
+      - "0.0.0.0:8437:80"
     depends_on:
       - backend
-    networks:
-      - crumbpanel
+    restart: unless-stopped
+    networks: [crumbpanel]
 
 volumes:
   db_data:
