@@ -12,12 +12,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Check if we're in the right directory
-if [ ! -f "docker-compose.yml" ]; then
-    echo -e "${RED}Error: Run this from the crumbpanel directory${NC}"
-    exit 1
-fi
-
 # Install Docker if needed
 if ! command -v docker &> /dev/null; then
     echo -e "${YELLOW}📦 Installing Docker...${NC}"
@@ -32,13 +26,27 @@ if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/
     sudo apt-get update && sudo apt-get install -y docker-compose
 fi
 
+# Clone or update repository
+REPO_DIR="crumbpanel"
+if [ ! -d "$REPO_DIR" ]; then
+    echo -e "${YELLOW}📥 Cloning CrumbPanel repository...${NC}"
+    git clone https://github.com/panie18/crumbpanel.git $REPO_DIR
+    cd $REPO_DIR
+    echo -e "${GREEN}✓ Repository cloned${NC}"
+else
+    echo -e "${GREEN}✓ Repository already exists${NC}"
+    cd $REPO_DIR
+    echo -e "${YELLOW}📥 Pulling latest changes...${NC}"
+    git pull
+fi
+
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
 mkdir -p data/backups data/servers data/logs
 chmod -R 755 data
 
 # Remove old Prisma files if they exist
-echo -e "${YELLOW}🧹 Cleaning up old Prisma files...${NC}"
+echo -e "${YELLOW}🧹 Cleaning up old files...${NC}"
 rm -rf backend/prisma backend/node_modules backend/dist 2>/dev/null || true
 rm -rf frontend/node_modules frontend/dist 2>/dev/null || true
 
