@@ -48,29 +48,29 @@ fi
 
 # AGGRESSIVE CLEANUP - Remove ALL broken files
 echo -e "${YELLOW}🧹 Removing ALL broken backend files...${NC}"
-rm -rf backend/src/audit
-rm -rf backend/src/cloud-backup  
-rm -rf backend/src/files
-rm -rf backend/src/metrics
-rm -rf backend/src/players
-rm -rf backend/src/websocket
-rm -rf backend/src/prisma
-rm -rf backend/prisma
-rm -f backend/src/auth/dto
-rm -f backend/src/auth/guards
-rm -f backend/src/auth/strategies
-rm -f backend/src/servers/dto
-rm -f backend/src/servers/rcon.service.ts
-rm -f backend/src/index.ts
+rm -rf backend/src/audit 2>/dev/null || true
+rm -rf backend/src/cloud-backup 2>/dev/null || true
+rm -rf backend/src/files 2>/dev/null || true
+rm -rf backend/src/metrics 2>/dev/null || true
+rm -rf backend/src/players 2>/dev/null || true
+rm -rf backend/src/websocket 2>/dev/null || true
+rm -rf backend/src/prisma 2>/dev/null || true
+rm -rf backend/prisma 2>/dev/null || true
+rm -rf backend/src/auth/dto 2>/dev/null || true
+rm -rf backend/src/auth/guards 2>/dev/null || true
+rm -rf backend/src/auth/strategies 2>/dev/null || true
+rm -rf backend/src/servers/dto 2>/dev/null || true
+rm -f backend/src/servers/rcon.service.ts 2>/dev/null || true
+rm -f backend/src/index.ts 2>/dev/null || true
 
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
 mkdir -p data/backups data/servers data/logs
 chmod -R 755 data
 
-# Remove old Prisma files if they exist
-echo -e "${YELLOW}🧹 Cleaning up old files...${NC}"
-rm -rf backend/prisma backend/node_modules backend/dist 2>/dev/null || true
+# Remove old build artifacts
+echo -e "${YELLOW}🧹 Cleaning up build artifacts...${NC}"
+rm -rf backend/node_modules backend/dist 2>/dev/null || true
 rm -rf frontend/node_modules frontend/dist 2>/dev/null || true
 
 # Stop old containers
