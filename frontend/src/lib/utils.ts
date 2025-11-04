@@ -26,22 +26,22 @@ export function formatDate(date: string | Date) {
 
 export function getStatusColor(status: string) {
   const colors: Record<string, string> = {
-    RUNNING: 'text-green-400',
-    STOPPED: 'text-gray-400',
-    STARTING: 'text-yellow-400',
-    STOPPING: 'text-orange-400',
-    ERROR: 'text-red-400',
+    RUNNING: 'text-white',
+    STOPPED: 'text-gray-500',
+    STARTING: 'text-gray-300',
+    STOPPING: 'text-gray-400',
+    ERROR: 'text-gray-600',
   };
   return colors[status] || 'text-gray-400';
 }
 
 export function getStatusBadgeClass(status: string) {
   const classes: Record<string, string> = {
-    RUNNING: 'bg-green-500/20 text-green-400 border-green-500/50',
+    RUNNING: 'bg-white/20 text-white border-white/50',
     STOPPED: 'bg-gray-500/20 text-gray-400 border-gray-500/50',
-    STARTING: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
-    STOPPING: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
-    ERROR: 'bg-red-500/20 text-red-400 border-red-500/50',
+    STARTING: 'bg-gray-300/20 text-gray-300 border-gray-300/50',
+    STOPPING: 'bg-gray-400/20 text-gray-400 border-gray-400/50',
+    ERROR: 'bg-gray-600/20 text-gray-500 border-gray-600/50',
   };
   return classes[status] || classes.STOPPED;
 }

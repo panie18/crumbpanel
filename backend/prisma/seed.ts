@@ -23,6 +23,7 @@ async function main() {
     });
 
     console.log(`✓ Admin user created: ${adminEmail}`);
+    console.log(`✓ Password: ${adminPassword}`);
   } else {
     console.log('✓ Admin user already exists');
   }

@@ -31,13 +31,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0a1a] via-[#0e111a] to-[#1a0a2e]">
-      {/* Animated background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-
+    <div className="min-h-screen bg-black">
       {/* Sidebar */}
       <motion.aside
         initial={{ x: -300 }}
@@ -47,8 +41,8 @@ export default function DashboardLayout() {
         <div className="flex flex-col h-full p-6">
           {/* Logo */}
           <div className="mb-8">
-            <h1 className="text-2xl font-bold gradient-text">MC Panel</h1>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
+            <h1 className="text-2xl font-bold text-white">CrumbPanel</h1>
+            <p className="text-sm text-gray-400">{user?.email}</p>
           </div>
 
           {/* Navigation */}
@@ -58,7 +52,7 @@ export default function DashboardLayout() {
                 key={item.name}
                 to={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
               >
                 <item.icon className="w-5 h-5" />
                 {item.name}
@@ -93,14 +87,14 @@ export default function DashboardLayout() {
         <Outlet />
         
         {/* Footer */}
-        <footer className="mt-12 text-center text-sm text-muted-foreground">
+        <footer className="mt-12 text-center text-sm text-gray-500">
           <p>
             Made with ❤️ by{' '}
             <a
               href="https://paulify.eu"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-white hover:text-gray-300 transition-colors"
             >
               paulify.dev
             </a>
@@ -110,7 +104,7 @@ export default function DashboardLayout() {
               href="https://github.com/panie18/crumbpanel"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-purple-400 hover:text-purple-300 transition-colors"
+              className="text-gray-400 hover:text-white transition-colors"
             >
               ⭐ Star on GitHub
             </a>
