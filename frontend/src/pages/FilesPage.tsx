@@ -84,6 +84,12 @@ export default function FilesPage() {
     setCurrentDir(parts.join('/'));
   };
 
+  const handleDelete = () => {
+    if (confirm('Really delete this server?')) {
+      deleteMutation.mutate();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -143,8 +149,7 @@ export default function FilesPage() {
                     <div>
                       <p className="font-semibold">{file.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {!file.isDirectory && formatBytes(file.size)} •{' '}
-                        {formatDate(file.modified)}
+                        {!file.isDirectory && formatBytes(file.size)} &bull; {formatDate(file.modified)}
                       </p>
                     </div>
                   </div>
@@ -163,7 +168,7 @@ export default function FilesPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        if (confirm('Wirklich löschen?')) {
+                        if (confirm('Really delete?')) {
                           deleteMutation.mutate(file.path);
                         }
                       }}
@@ -173,7 +178,7 @@ export default function FilesPage() {
                   </div>
                 </div>
               ))
-            }
+            )}
           </div>
         </CardContent>
       </Card>
