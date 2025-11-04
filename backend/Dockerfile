@@ -1,4 +1,5 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
+
 WORKDIR /app
 
 # Install dependencies
@@ -13,17 +14,19 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
-WORKDIR /app
-
-# Copy from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/package*.json ./
-
 # Expose port
 EXPOSE 5829
 
-# Startup script
-CMD sh -c "npx prisma migrate deploy && node dist/main.js"
+# Startup script with logging
+RUN echo '#!/bin/sh\n\
+echo "🚀 Starting CrumbPanel Backend..."\n\
+echo "⏳ Waiting for database..."\n\
+sleep 15\n\
+echo "🔄 Running migrations..."\n\
+npx prisma migrate deploy || echo "⚠️ Migration failed, continuing..."\n\
+echo "✅ Starting server..."\n\
+node dist/main.js' > /app/start.sh
+
+RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]

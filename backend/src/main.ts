@@ -7,19 +7,18 @@ import * as express from 'express';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  try {
-    logger.log('🚀 Starting CrumbPanel Backend...');
+  logger.log('🚀 Starting CrumbPanel Backend...');
 
+  try {
     const app = await NestFactory.create(AppModule, {
       cors: true,
       logger: ['log', 'error', 'warn', 'debug'],
     });
 
     app.enableCors({
-      origin: true,
+      origin: '*',
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     });
 
     app.useGlobalPipes(
@@ -32,7 +31,8 @@ async function bootstrap() {
 
     app.setGlobalPrefix('api');
 
-    const port = parseInt(process.env.PORT || '5829', 10);
+    const port = parseInt(process.env.PORT) || 5829;
+
     await app.listen(port, '0.0.0.0'); // important: bind to all interfaces
 
     logger.log(`
@@ -43,7 +43,7 @@ async function bootstrap() {
 ╚════════════════════════════════════════════════════════╝
     `);
   } catch (error) {
-    logger.error('❌ Failed to start:', error);
+    logger.error('❌ Failed to start backend:', error);
     process.exit(1);
   }
 }
