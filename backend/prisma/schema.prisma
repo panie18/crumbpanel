@@ -7,24 +7,30 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model User {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  role      String   @default("admin")
+  updatedAt DateTime @updatedAt
+}
+
 model Server {
   id            String   @id @default(uuid())
   createdAt     DateTime @default(now())
   name          String
   path          String
-  host          String   @default("localhost")
   port          Int      @unique
   rconPort      Int      @unique
   rconPassword  String
   version       String
   maxRam        Int
-  javaArgs      String   @default("-XX:+UseG1GC")
-  autoStart     Boolean  @default(false)
   status        String   @default("stopped")
   updatedAt     DateTime @updatedAt
   players       Player[]
   backups       Backup[]
-  metrics       Metric[]
 }
 
 model Player {
@@ -44,17 +50,5 @@ model Backup {
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   filename  String
-  path      String
   size      Int
-}
-
-model Metric {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  serverId  String
-  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  cpuUsage  Float
-  ramUsage  Float
-  players   Int
-  tps       Float    @default(20.0)
 }

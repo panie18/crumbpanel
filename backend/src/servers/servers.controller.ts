@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Put, Delete } from '@nestjs/common';
 import { ServersService } from './servers.service';
 import { CreateServerDto, UpdateServerDto } from './dto/server.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,8 +9,8 @@ export class ServersController {
   constructor(private serversService: ServersService) {}
 
   @Get()
-  findAll() {
-    return this.serversService.findAll();
+  async getAll() {
+    return this.serversService.getAll();
   }
 
   @Get(':id')
@@ -19,8 +19,8 @@ export class ServersController {
   }
 
   @Post()
-  create(@Body() dto: CreateServerDto) {
-    return this.serversService.create(dto);
+  async create(@Body() body: any) {
+    return this.serversService.create(body);
   }
 
   @Put(':id')

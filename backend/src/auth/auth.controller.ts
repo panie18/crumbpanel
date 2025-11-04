@@ -24,13 +24,13 @@ export class AuthController {
   }
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(@Body() body: { email: string; username: string; password: string }) {
+    return this.authService.register(body.email, body.username, body.password);
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() body: { email: string; password: string }) {
+    return this.authService.login(body.email, body.password);
   }
 
   @Post('refresh')
