@@ -2,49 +2,130 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - CLEAN BUILD Installation                ║"
+echo "║  CrumbPanel - TypeORM + SQLite Installation           ║"
+echo "║          Made by paulify.dev (https://paulify.eu)     ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
-cd ~/crumbpanel || exit 1
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Clean backend
-echo "🧹 Cleaning backend..."
-rm -rf backend/node_modules backend/dist
-rm -rf backend/src/audit backend/src/cloud-backup backend/src/files 
-rm -rf backend/src/metrics backend/src/players backend/src/websocket
-rm -rf backend/src/auth/dto backend/src/auth/guards backend/src/auth/strategies
-rm -rf backend/src/servers/dto
-rm -f backend/src/servers/rcon.service.ts
-rm -f backend/src/index.ts
+# Check if we're in the right directory
+if [ ! -f "docker-compose.yml" ]; then
+    echo -e "${RED}Error: Run this from the crumbpanel directory${NC}"
+    exit 1
+fi
 
+# Install Docker if needed
+if ! command -v docker &> /dev/null; then
+    echo -e "${YELLOW}📦 Installing Docker...${NC}"
+    curl -fsSL https://get.docker.com | sh
+    sudo usermod -aG docker $USER
+    echo -e "${YELLOW}Please log out and log back in, then run this script again${NC}"
+    exit 0
+fi
+
+if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    echo -e "${YELLOW}📦 Installing Docker Compose...${NC}"
+    sudo apt-get update && sudo apt-get install -y docker-compose
+fi
+
+# Create directories
+echo -e "${YELLOW}📁 Creating directories...${NC}"
 mkdir -p data/backups data/servers data/logs
+chmod -R 755 data
 
-echo "🛑 Stopping old containers..."
+# Remove old Prisma files if they exist
+echo -e "${YELLOW}🧹 Cleaning up old Prisma files...${NC}"
+rm -rf backend/prisma backend/node_modules backend/dist 2>/dev/null || true
+rm -rf frontend/node_modules frontend/dist 2>/dev/null || true
+
+# Stop old containers
+echo -e "${YELLOW}🛑 Stopping old containers...${NC}"
 docker compose down -v 2>/dev/null || true
 
-echo "🔨 Building clean backend..."
-docker compose build --no-cache backend
+# Remove old images to force rebuild
+echo -e "${YELLOW}🗑️ Removing old images...${NC}"
+docker image rm crumbpanel-backend crumbpanel-frontend 2>/dev/null || true
 
-echo "🎨 Building frontend..."
-docker compose build --no-cache frontend
+# Build fresh containers
+echo -e "${YELLOW}🔨 Building containers (this may take a few minutes)...${NC}"
+docker compose build --no-cache
 
-echo "🚀 Starting containers..."
+# Start containers
+echo -e "${YELLOW}🚀 Starting containers...${NC}"
 docker compose up -d
 
-echo "⏳ Waiting 30 seconds..."
-sleep 30
+# Wait for backend to start
+echo -e "${YELLOW}⏳ Waiting for backend to be ready...${NC}"
+for i in {1..60}; do
+  if curl -s http://localhost:5829/api/auth/me > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Backend is ready${NC}"
+    break
+  fi
+  if [ $i -eq 60 ]; then
+    echo -e "${RED}Backend failed to start. Logs:${NC}"
+    docker compose logs backend
+    exit 1
+  fi
+  echo "Waiting... ($i/60)"
+  sleep 2
+done
 
+# Wait for frontend
+echo -e "${YELLOW}⏳ Waiting for frontend...${NC}"
+for i in {1..30}; do
+  if curl -s http://localhost:8437 > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Frontend is ready${NC}"
+    break
+  fi
+  if [ $i -eq 30 ]; then
+    echo -e "${RED}Frontend failed to start. Logs:${NC}"
+    docker compose logs frontend
+    exit 1
+  fi
+  sleep 1
+done
+
+# Get server IP
 IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  ✅ CLEAN INSTALLATION COMPLETE!                      ║"
+echo "║            ✅ INSTALLATION COMPLETE! ✅                ║"
+echo "║          Made by paulify.dev (https://paulify.eu)     ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
-echo "🌐 Access: http://${IP}:8437"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}🌐 Access CrumbPanel:${NC}"
+echo -e "   Local:    http://localhost:8437"
+echo -e "   Network:  http://${IP}:8437"
 echo ""
-echo "Container Status:"
+echo -e "${GREEN}🔧 Backend API:${NC}"
+echo -e "   URL:      http://localhost:5829/api"
+echo ""
+echo -e "${GREEN}💾 Database:${NC}"
+echo -e "   Type:     SQLite"
+echo -e "   Location: ./data/crumbpanel.db"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+echo "📊 Container Status:"
 docker compose ps
 echo ""
-echo "Backend Logs:"
-docker compose logs backend --tail=10
+echo -e "${BLUE}📋 Useful Commands:${NC}"
+echo "   View logs:     docker compose logs -f"
+echo "   Stop:          docker compose stop"
+echo "   Start:         docker compose start"
+echo "   Restart:       docker compose restart"
+echo "   Update:        git pull && ./install.sh"
+echo ""
+echo -e "${YELLOW}🔐 Auth0 Setup Required:${NC}"
+echo "   1. Create Auth0 app at https://manage.auth0.com"
+echo "   2. Set callback URL: http://${IP}:8437/api/auth/callback"
+echo "   3. Update docker-compose.yml with your Auth0 credentials"
+echo ""
+echo -e "${GREEN}⭐ Star the project: ${BLUE}https://github.com/panie18/crumbpanel${NC}"
+echo -e "${GREEN}🌐 Visit: ${BLUE}https://paulify.eu${NC}"
+echo ""
