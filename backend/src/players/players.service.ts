@@ -34,7 +34,7 @@ export class PlayersService {
         if (existingPlayer) {
           await this.prisma.player.update({
             where: { id: existingPlayer.id },
-            update: {
+            data: {
               isOnline: true,
               lastSeen: new Date(),
             },

@@ -10,7 +10,6 @@ import { FilesModule } from './files/files.module';
 import { WebSocketModule } from './websocket/websocket.module';
 import { AuditModule } from './audit/audit.module';
 import { CloudBackupModule } from './cloud-backup/cloud-backup.module';
-import { BackupsModule } from './backups/backups.module';
 
 @Module({
   imports: [
@@ -29,7 +28,6 @@ import { BackupsModule } from './backups/backups.module';
     WebSocketModule,
     AuditModule,
     CloudBackupModule,
-    BackupsModule,
   ],
 })
 export class AppModule {}
