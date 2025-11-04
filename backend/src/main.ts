@@ -34,44 +34,36 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: [
-        'http://localhost:8437',
-        'http://localhost:3000',
-        'http://frontend',
-        'http://frontend:80',
-      ],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    },
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    cors: true,
+    logger: ['error', 'warn', 'log'],
   });
 
-  // Security
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: false }));
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-  // Global validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
     }),
   );
 
-  // API prefix
   app.setGlobalPrefix('api');
 
   const port = process.env.PORT || 5829;
-  await app.listen(port);
+
+  // WICHTIG: 0.0.0.0 statt localhost!
+  await app.listen(port, '0.0.0.0');
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
-║     CrumbPanel Backend Running on Port ${port}           ║
-║     Visit http://localhost:8437 to get started           ║
+║     ✓ CrumbPanel Backend READY on http://0.0.0.0:${port}  ║
 ╚═══════════════════════════════════════════════════════════╝
   `);
 }

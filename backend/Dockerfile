@@ -16,6 +16,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache postgresql-client
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
@@ -23,5 +25,4 @@ COPY --from=builder /app/package*.json ./
 
 EXPOSE 5829
 
-# Wait for DB and run migrations, then start
-CMD ["sh", "-c", "sleep 5 && npx prisma migrate deploy && node dist/main.js"]
+CMD ["node", "dist/main.js"]

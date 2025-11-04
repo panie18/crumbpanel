@@ -1,19 +1,15 @@
 import axios from 'axios';
 
-// Detect if running in Docker or localhost
-const isDocker = window.location.hostname !== 'localhost';
-const API_URL = isDocker
-  ? '/api' // Use nginx proxy in Docker
-  : (import.meta.env.VITE_API_URL || 'http://localhost:5829/api');
+const API_URL = 'http://localhost:5829/api';
 
-console.log('API URL:', API_URL);
+console.log('🔗 API URL:', API_URL);
 
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout
+  timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
@@ -21,12 +17,18 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  console.log('📤 API Request:', config.method?.toUpperCase(), config.url);
   return config;
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('✅ API Response:', response.status, response.config.url);
+    return response;
+  },
   async (error) => {
+    console.error('❌ API Error:', error.message, error.config?.url);
+    
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

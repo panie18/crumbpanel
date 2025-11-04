@@ -13,10 +13,7 @@ import toast from 'react-hot-toast';
 import { Server, User, Mail, Lock, Palette, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
-const isDocker = window.location.hostname !== 'localhost';
-const API_URL = isDocker 
-  ? '/api'
-  : (import.meta.env.VITE_API_URL || 'http://localhost:5829/api');
+const API_URL = 'http://localhost:5829/api';
 
 const PRESET_COLORS = [
 	{ name: 'Classic Black', primary: '#000000', accent: '#ffffff' },
@@ -44,23 +41,47 @@ export default function SetupPage() {
 		queryKey: ['setup-status'],
 		queryFn: async () => {
 			try {
-				console.log('Checking setup status at:', `${API_URL}/auth/setup-status`);
-				const response = await axios.get(`${API_URL}/auth/setup-status`);
+				console.log('🔍 Checking setup status...');
+				const response = await axios.get(`${API_URL}/auth/setup-status`, {
+					timeout: 10000,
+				});
+				console.log('✅ Setup status:', response.data);
 				return response.data;
 			} catch (error) {
-				console.error('Setup status check error:', error);
+				console.error('❌ Setup status check failed:', error);
 				return { needsSetup: true };
 			}
 		},
+		retry: 2,
+		retryDelay: 1000,
 	});
 
+	useEffect(() => {
+		if (setupStatus?.isSetupComplete === true) {
+			navigate('/login', { replace: true });
+		}
+	}, [setupStatus, navigate]);
+
 	const setupMutation = useMutation({
-		mutationFn: (data: { username: string; email: string; password: string }) => {
-			console.log('Sending setup request to:', `${API_URL}/auth/setup`);
-			return axios.post(`${API_URL}/auth/setup`, data);
+		mutationFn: async (data: { username: string; email: string; password: string }) => {
+			console.log('🚀 Starting setup with data:', { email: data.email, username: data.username });
+			
+			try {
+				const response = await axios.post(`${API_URL}/auth/setup`, data, {
+					timeout: 30000,
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				});
+				console.log('✅ Setup response:', response.data);
+				return response;
+			} catch (error) {
+				console.error('❌ Setup request failed:', error);
+				throw error;
+			}
 		},
 		onSuccess: (response) => {
-			console.log('Setup successful:', response.data);
+			console.log('🎉 Setup successful!');
 			const { user, accessToken, refreshToken } = response.data;
 			setAuth(user, accessToken, refreshToken);
 			setCustomColors(customPrimary, customAccent);
@@ -68,35 +89,21 @@ export default function SetupPage() {
 			navigate('/');
 		},
 		onError: (error: any) => {
-			console.error('Setup error:', error);
-			console.error('Error details:', {
-				message: error.message,
-				response: error.response?.data,
-				status: error.response?.status,
-			});
+			console.error('💥 Setup failed:', error);
 			
-			let errorMessage = 'Setup failed. Please try again.';
+			let errorMessage = 'Setup failed. Please check the server logs.';
 			
 			if (error.response?.data?.message) {
 				errorMessage = error.response.data.message;
-			} else if (error.response?.data?.error) {
-				errorMessage = error.response.data.error;
-			} else if (error.message === 'Network Error') {
-				errorMessage = 'Cannot connect to server. Please wait a moment and try again.';
-			} else if (error.code === 'ECONNREFUSED') {
-				errorMessage = 'Server is starting up. Please wait a moment...';
+			} else if (error.code === 'ECONNABORTED') {
+				errorMessage = 'Request timeout. Server might be slow to start.';
+			} else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+				errorMessage = 'Cannot reach server. Make sure backend is running on port 5829.';
 			}
 			
-			toast.error(errorMessage, { duration: 5000 });
+			toast.error(errorMessage, { duration: 8000 });
 		},
 	});
-
-	useEffect(() => {
-		// If setup is already complete, redirect to login
-		if (setupStatus?.isSetupComplete === true) {
-			navigate('/login', { replace: true });
-		}
-	}, [setupStatus, navigate]);
 
 	const handleNext = () => {
 		if (step === 1 && !username.trim()) {

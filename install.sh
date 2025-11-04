@@ -2,13 +2,8 @@
 set -e
 
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║              CrumbPanel - Auto Installer                 ║"
-echo "║          Made by paulify.dev (https://paulify.eu)        ║"
+echo "║          CrumbPanel Installation - ULTIMATE FIX          ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
-echo ""
-echo "This script will install CrumbPanel on your system."
-echo "Installation includes: Docker, Docker Compose, and all dependencies."
-echo ""
 
 # Colors
 RED='\033[0;31m'
@@ -237,6 +232,64 @@ for i in {1..30}; do
     sleep 2
   fi
 done
+
+# Ultimate Install Fix
+cd crumbpanel || exit 1
+
+# Stop everything
+echo "🛑 Stopping old containers..."
+docker-compose down -v 2>/dev/null || true
+
+# Clean build
+echo "🔨 Building fresh containers..."
+docker-compose build --no-cache
+
+# Start database first
+echo "🗄️ Starting database..."
+docker-compose up -d db
+
+# Wait for DB
+echo "⏳ Waiting for database..."
+for i in {1..30}; do
+  if docker-compose exec -T db pg_isready -U mc_admin > /dev/null 2>&1; then
+    echo "✅ Database ready!"
+    break
+  fi
+  sleep 2
+done
+
+# Start backend
+echo "🚀 Starting backend..."
+docker-compose up -d backend
+
+# Wait for backend
+echo "⏳ Waiting for backend..."
+for i in {1..60}; do
+  if curl -s http://localhost:5829/api/auth/setup-status > /dev/null 2>&1; then
+    echo "✅ Backend ready!"
+    break
+  fi
+  if [ $i -eq 60 ]; then
+    echo "❌ Backend failed to start!"
+    echo "📋 Backend logs:"
+    docker-compose logs backend
+    exit 1
+  fi
+  sleep 1
+done
+
+# Start frontend
+echo "🎨 Starting frontend..."
+docker-compose up -d frontend
+
+echo ""
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║                  ✅ INSTALLATION COMPLETE                 ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+echo ""
+echo "🌐 Open: http://localhost:8437"
+echo ""
+docker-compose ps
 
 # Show status
 echo ""
