@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Play, Square, RotateCw, Trash2, FileText } from 'lucide-react';
+import { ArrowLeft, Play, Square, RotateCw, FileText } from 'lucide-react';
 import { serversApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

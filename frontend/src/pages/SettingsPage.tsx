@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
-import { Settings, Cloud, Shield, Globe } from 'lucide-react';
+import { Cloud, Shield, Globe } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user } = useAuthStore();

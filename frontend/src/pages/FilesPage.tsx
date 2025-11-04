@@ -5,14 +5,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { filesApi, serversApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   ArrowLeft,
   Folder,
   File,
   Trash2,
   Edit,
-  FolderPlus,
   Save,
 } from 'lucide-react';
 import { formatBytes, formatDate } from '@/lib/utils';
@@ -82,12 +80,6 @@ export default function FilesPage() {
     const parts = currentDir.split('/').filter(Boolean);
     parts.pop();
     setCurrentDir(parts.join('/'));
-  };
-
-  const handleDelete = () => {
-    if (confirm('Really delete this server?')) {
-      deleteMutation.mutate();
-    }
   };
 
   return (
@@ -178,7 +170,7 @@ export default function FilesPage() {
                   </div>
                 </div>
               ))
-            )}
+            }
           </div>
         </CardContent>
       </Card>

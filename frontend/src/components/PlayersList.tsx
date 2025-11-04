@@ -3,7 +3,7 @@ import { playersApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { UserX, Ban, UserCheck, RefreshCw } from 'lucide-react';
+import { UserX, Ban, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 

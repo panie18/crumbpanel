@@ -4,10 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { serversApi, backupsApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Download,
-  Upload,
   Trash2,
   RefreshCw,
   Database,
@@ -192,7 +190,7 @@ export default function BackupsPage() {
                   </div>
                 </div>
               ))
-            )}
+            }
           </div>
         </CardContent>
       </Card>
@@ -262,7 +260,7 @@ export default function BackupsPage() {
                     </div>
                   </div>
                 ))
-              )}
+              }
             </div>
           </CardContent>
         </Card>
