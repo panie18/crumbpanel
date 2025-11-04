@@ -1,30 +1,28 @@
-# CrumbPanel - Minecraft Server Management Panel
-# Made by paulify.dev (https://paulify.eu)
-# Repository: https://github.com/panie18/crumbpanel
-
 services:
   db:
     image: postgres:16-alpine
     container_name: mc_db
     restart: always
-    network_mode: host
     environment:
       POSTGRES_USER: mc_admin
       POSTGRES_PASSWORD: mc_password
       POSTGRES_DB: mc_panel
     volumes:
       - db_data:/var/lib/postgresql/data
+    networks:
+      - crumbpanel
 
   backend:
     build: ./backend
     container_name: mc_backend
-    network_mode: host
+    ports:
+      - "5829:5829"
     depends_on:
       - db
     environment:
       - NODE_ENV=production
       - PORT=5829
-      - DATABASE_URL=postgresql://mc_admin:mc_password@localhost:5432/mc_panel
+      - DATABASE_URL=postgresql://mc_admin:mc_password@db:5432/mc_panel
       - JWT_SECRET=crumbpanel_jwt_secret_min32chars_long
       - JWT_REFRESH_SECRET=crumbpanel_refresh_secret_min32chars
       - ENCRYPTION_KEY=crumbpanel_encryption_key_16ch
@@ -32,14 +30,23 @@ services:
       - ./data/backups:/app/backups
       - ./data/servers:/app/servers
     restart: unless-stopped
+    networks:
+      - crumbpanel
 
   frontend:
     build: ./frontend
     container_name: mc_frontend
-    network_mode: host
+    ports:
+      - "8437:80"
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - crumbpanel
 
 volumes:
   db_data:
+
+networks:
+  crumbpanel:
+    driver: bridge
