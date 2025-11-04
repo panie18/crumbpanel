@@ -2,7 +2,7 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - MariaDB Installation                    ║"
+echo "║  CrumbPanel - MariaDB Clean Install                   ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
 RED='\033[0;31m'
@@ -17,17 +17,18 @@ fi
 
 mkdir -p data/backups data/servers data/logs
 
-echo -e "${YELLOW}Stopping old containers...${NC}"
+echo -e "${YELLOW}Removing all old containers and volumes...${NC}"
 docker compose down -v 2>/dev/null || true
+docker volume rm crumbpanel_db_data 2>/dev/null || true
 
-echo -e "${YELLOW}Building containers...${NC}"
+echo -e "${YELLOW}Building fresh containers...${NC}"
 docker compose build --no-cache
 
 echo -e "${YELLOW}Starting containers...${NC}"
 docker compose up -d
 
-echo -e "${YELLOW}Waiting 40 seconds for startup...${NC}"
-sleep 40
+echo -e "${YELLOW}Waiting 60 seconds for complete startup...${NC}"
+sleep 60
 
 IP=$(hostname -I | awk '{print $1}')
 
@@ -38,6 +39,10 @@ echo "╚═══════════════════════�
 echo ""
 echo -e "${GREEN}Access: http://${IP}:8437${NC}"
 echo ""
+echo "Container Status:"
 docker compose ps
 echo ""
-echo "Check logs: docker compose logs -f"
+echo "Backend Logs:"
+docker compose logs backend | tail -20
+echo ""
+echo -e "${YELLOW}Full logs: docker compose logs -f${NC}"

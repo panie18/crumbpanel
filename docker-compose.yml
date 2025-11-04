@@ -17,6 +17,11 @@ services:
     ports:
       - "3306:3306"
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     networks:
       - crumbpanel
 
@@ -26,7 +31,8 @@ services:
     ports:
       - "5829:5829"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - NODE_ENV=production
       - PORT=5829
