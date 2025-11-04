@@ -279,5 +279,19 @@ For Nextcloud:
 2. Create a new app password
 3. Use that password in WEBDAV_PASSWORD
 
+### Build Failed - npm ci Error
+
+If you get `npm ci` error during build:
+
+```bash
+# This happens when package-lock.json is missing
+# The Dockerfile now uses npm install instead
+
+# If issue persists, rebuild without cache:
+cd crumbpanel
+docker-compose build --no-cache
+docker-compose up -d
+```
+
 ---
 
