@@ -2,7 +2,7 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - MariaDB Clean Install                   ║"
+echo "║  CrumbPanel - DEBUGGING Installation                  ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
 RED='\033[0;31m'
@@ -10,39 +10,48 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-if [ ! -f "docker-compose.yml" ]; then
-    echo -e "${RED}Error: Run from crumbpanel directory${NC}"
-    exit 1
-fi
+cd ~/crumbpanel || exit 1
 
 mkdir -p data/backups data/servers data/logs
 
-echo -e "${YELLOW}Removing all old containers and volumes...${NC}"
+echo -e "${YELLOW}Stopping everything...${NC}"
 docker compose down -v 2>/dev/null || true
-docker volume rm crumbpanel_db_data 2>/dev/null || true
 
-echo -e "${YELLOW}Building fresh containers...${NC}"
+echo -e "${YELLOW}Building containers...${NC}"
 docker compose build --no-cache
 
-echo -e "${YELLOW}Starting containers...${NC}"
-docker compose up -d
+echo -e "${YELLOW}Starting database...${NC}"
+docker compose up -d db
 
-echo -e "${YELLOW}Waiting 60 seconds for complete startup...${NC}"
-sleep 60
+echo -e "${YELLOW}Waiting 15 seconds for database...${NC}"
+sleep 15
 
-IP=$(hostname -I | awk '{print $1}')
+echo -e "${YELLOW}Testing database...${NC}"
+docker compose exec db mysql -u mc_admin -pmc_password mc_panel -e "SELECT 1"
+
+echo -e "${YELLOW}Starting backend...${NC}"
+docker compose up -d backend
+
+echo -e "${YELLOW}Watching backend logs for 30 seconds...${NC}"
+timeout 30 docker compose logs -f backend || true
+
+echo -e "${YELLOW}Starting frontend...${NC}"
+docker compose up -d frontend
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  Installation Complete                                 ║"
+echo "║  Container Status                                      ║"
 echo "╚════════════════════════════════════════════════════════╝"
-echo ""
-echo -e "${GREEN}Access: http://${IP}:8437${NC}"
-echo ""
-echo "Container Status:"
 docker compose ps
+
 echo ""
-echo "Backend Logs:"
-docker compose logs backend | tail -20
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║  Backend Logs (last 30 lines)                         ║"
+echo "╚════════════════════════════════════════════════════════╝"
+docker compose logs backend --tail=30
+
 echo ""
-echo -e "${YELLOW}Full logs: docker compose logs -f${NC}"
+IP=$(hostname -I | awk '{print $1}')
+echo -e "${GREEN}Try: http://${IP}:8437${NC}"
+echo ""
+echo "View live logs: docker compose logs -f backend"
