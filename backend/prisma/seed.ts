@@ -1,37 +1,28 @@
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@mcpanel.local';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
-  });
-
-  if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash(adminPassword, 12);
-
+  const adminEmail = 'admin@crumbpanel.local';
+  const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
+  if (!existing) {
+    const passwordHash = await bcrypt.hash('ChangeMe123!', 10);
     await prisma.user.create({
       data: {
         email: adminEmail,
-        password: hashedPassword,
-        role: 'ADMIN',
+        username: 'admin',
+        password: passwordHash,
+        role: 'admin',
       },
     });
-
-    console.log(`✓ Admin user created: ${adminEmail}`);
-    console.log(`✓ Password: ${adminPassword}`);
-  } else {
-    console.log('✓ Admin user already exists');
+    console.log('Seeded default admin user (admin@crumbpanel.local / ChangeMe123!)');
   }
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
+  .catch((err) => {
+    console.error(err);
     process.exit(1);
   })
   .finally(async () => {
