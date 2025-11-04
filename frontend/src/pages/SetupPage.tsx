@@ -41,6 +41,7 @@ export default function SetupPage() {
 		mutationFn: (data: { username: string; email: string; password: string }) =>
 			axios.post(`${API_URL}/auth/setup`, data),
 		onSuccess: (response) => {
+			console.log('Setup successful:', response.data);
 			const { user, accessToken, refreshToken } = response.data;
 			setAuth(user, accessToken, refreshToken);
 			setCustomColors(customPrimary, customAccent);
@@ -48,7 +49,12 @@ export default function SetupPage() {
 			navigate('/');
 		},
 		onError: (error: any) => {
-			toast.error(error.response?.data?.message || 'Setup failed');
+			console.error('Setup error:', error);
+			console.error('Error response:', error.response?.data);
+			const errorMessage = error.response?.data?.message || 
+							error.response?.data?.error ||
+							'Setup failed. Please try again.';
+			toast.error(errorMessage);
 		},
 	});
 

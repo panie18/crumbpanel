@@ -31,38 +31,45 @@ export class AuthService {
   }
 
   async initialSetup(dto: { username: string; email: string; password: string }) {
-    const userCount = await this.prisma.user.count();
-    
-    if (userCount > 0) {
-      throw new ConflictException('Setup already completed');
+    try {
+      const userCount = await this.prisma.user.count();
+      
+      if (userCount > 0) {
+        throw new ConflictException('Setup already completed');
+      }
+
+      console.log('Creating initial admin user:', dto.email);
+
+      const hashedPassword = await bcrypt.hash(dto.password, 12);
+
+      const user = await this.prisma.user.create({
+        data: {
+          email: dto.email,
+          password: hashedPassword,
+          role: 'ADMIN',
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      });
+
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
+      await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+      console.log('✓ Initial setup completed successfully for:', dto.email);
+
+      return {
+        user,
+        ...tokens,
+        message: 'Setup completed successfully',
+      };
+    } catch (error) {
+      console.error('Setup failed:', error);
+      throw error;
     }
-
-    const hashedPassword = await bcrypt.hash(dto.password, 12);
-
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        role: 'ADMIN',
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    });
-
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-    await this.storeRefreshToken(user.id, tokens.refreshToken);
-
-    console.log('✓ Initial setup completed for:', dto.email);
-
-    return {
-      user,
-      ...tokens,
-      message: 'Setup completed successfully',
-    };
   }
 
   async register(dto: RegisterDto) {
