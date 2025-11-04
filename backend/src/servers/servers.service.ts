@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Server } from '../entities/server.entity';
 import { CreateServerDto, UpdateServerDto } from './dto/server.dto';
 import { RconService } from './rcon.service';
 import { exec } from 'child_process';
@@ -13,37 +15,21 @@ const execAsync = promisify(exec);
 @Injectable()
 export class ServersService {
   constructor(
-    private prisma: PrismaService,
+    @InjectRepository(Server)
+    private serverRepository: Repository<Server>,
     private rconService: RconService,
   ) {}
 
   async findAll() {
-    return this.prisma.server.findMany({
-      include: {
-        _count: {
-          select: {
-            players: true,
-            backups: true,
-          },
-        },
-      },
+    return this.serverRepository.find({
+      relations: ['players', 'backups'],
     });
   }
 
   async findOne(id: string) {
-    const server = await this.prisma.server.findUnique({
+    const server = await this.serverRepository.findOne({
       where: { id },
-      include: {
-        players: true,
-        backups: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-        metrics: {
-          orderBy: { timestamp: 'desc' },
-          take: 50,
-        },
-      },
+      relations: ['players', 'backups'],
     });
 
     if (!server) {
@@ -59,12 +45,14 @@ export class ServersService {
     const serverPath = path.join('/app/servers', dto.name.replace(/\s+/g, '_'));
     await fs.mkdir(serverPath, { recursive: true });
 
-    const server = await this.prisma.server.create({
-      data: {
-        ...dto,
-        rconPassword: encryptedPassword,
-        path: serverPath,
-      },
+    const server = await this.serverRepository.save({
+      name: dto.name,
+      port: dto.port,
+      rconPort: dto.rconPort,
+      rconPassword: encryptedPassword,
+      version: dto.version,
+      maxRam: dto.maxRam,
+      path: serverPath,
     });
 
     // Create server.properties
@@ -80,7 +68,7 @@ export class ServersService {
       data.rconPassword = this.encryptPassword(dto.rconPassword);
     }
 
-    return this.prisma.server.update({
+    return this.serverRepository.update({
       where: { id },
       data,
     });
@@ -96,7 +84,7 @@ export class ServersService {
       console.error('Error deleting server files:', error);
     }
 
-    return this.prisma.server.delete({
+    return this.serverRepository.delete({
       where: { id },
     });
   }
@@ -104,7 +92,7 @@ export class ServersService {
   async start(id: string) {
     const server = await this.findOne(id);
     
-    await this.prisma.server.update({
+    await this.serverRepository.update({
       where: { id },
       data: { status: 'STARTING' },
     });
@@ -118,14 +106,14 @@ export class ServersService {
       // Wait for server to start
       await new Promise(resolve => setTimeout(resolve, 5000));
 
-      await this.prisma.server.update({
+      await this.serverRepository.update({
         where: { id },
         data: { status: 'RUNNING' },
       });
 
       return { message: 'Server started successfully' };
     } catch (error) {
-      await this.prisma.server.update({
+      await this.serverRepository.update({
         where: { id },
         data: { status: 'ERROR' },
       });
@@ -136,7 +124,7 @@ export class ServersService {
   async stop(id: string) {
     const server = await this.findOne(id);
     
-    await this.prisma.server.update({
+    await this.serverRepository.update({
       where: { id },
       data: { status: 'STOPPING' },
     });
@@ -146,7 +134,7 @@ export class ServersService {
       
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      await this.prisma.server.update({
+      await this.serverRepository.update({
         where: { id },
         data: { status: 'STOPPED' },
       });
@@ -168,7 +156,7 @@ export class ServersService {
     const isRunning = await this.checkIfRunning(server);
 
     if (isRunning !== (server.status === 'RUNNING')) {
-      await this.prisma.server.update({
+      await this.serverRepository.update({
         where: { id },
         data: { status: isRunning ? 'RUNNING' : 'STOPPED' },
       });

@@ -1,19 +1,20 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private jwtService: JwtService,
   ) {}
 
   async getSetupStatus() {
     try {
-      const userCount = await this.prisma.user.count();
+      const userCount = await this.userRepository.count();
       console.log('Setup status check - User count:', userCount);
       return {
         isSetupComplete: userCount > 0,
@@ -43,7 +44,7 @@ export class AuthService {
         throw new Error('Database connection failed');
       }
 
-      const userCount = await this.prisma.user.count();
+      const userCount = await this.userRepository.count();
       console.log('Current user count:', userCount);
       
       if (userCount > 0) {
@@ -54,18 +55,10 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(dto.password, 12);
 
       console.log('Creating user in database...');
-      const user = await this.prisma.user.create({
-        data: {
-          email: dto.email,
-          password: hashedPassword,
-          role: 'ADMIN',
-        },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
+      const user = await this.userRepository.save({
+        email: dto.email,
+        password: hashedPassword,
+        role: 'ADMIN',
       });
 
       console.log('✓ User created:', user.id);
@@ -104,7 +97,7 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.user.findUnique({
+    const exists = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
@@ -114,18 +107,10 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        role: 'USER',
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
+    const user = await this.userRepository.save({
+      email: dto.email,
+      password: hashedPassword,
+      role: 'USER',
     });
 
     return user;
@@ -134,7 +119,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     console.log('Login attempt for:', dto.email);
     
-    const user = await this.prisma.user.findUnique({
+    const user = await this.userRepository.findOne({
       where: { email: dto.email },
     });
 
@@ -241,19 +226,17 @@ export class AuthService {
   async validateAuth0User(profile: any) {
     const { id, emails, displayName, photos } = profile;
     
-    let user = await this.prisma.user.findUnique({
+    let user = await this.userRepository.findOne({
       where: { auth0Id: id },
     });
 
     if (!user) {
-      user = await this.prisma.user.create({
-        data: {
-          auth0Id: id,
-          email: emails[0].value,
-          name: displayName,
-          picture: photos[0]?.value,
-          role: 'ADMIN',
-        },
+      user = await this.userRepository.save({
+        auth0Id: id,
+        email: emails[0].value,
+        name: displayName,
+        picture: photos[0]?.value,
+        role: 'ADMIN',
       });
     }
 

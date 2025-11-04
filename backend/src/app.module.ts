@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import { PrismaModule } from './prisma/prisma.module';
+import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ServersModule } from './servers/servers.module';
 
@@ -15,7 +15,7 @@ import { ServersModule } from './servers/servers.module';
       secret: process.env.JWT_SECRET || 'fallback-secret',
       signOptions: { expiresIn: '1h' },
     }),
-    PrismaModule,
+    DatabaseModule,
     AuthModule,
     ServersModule,
   ],
