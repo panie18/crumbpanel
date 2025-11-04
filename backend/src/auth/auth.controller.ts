@@ -14,7 +14,13 @@ export class AuthController {
 
   @Post('setup')
   async initialSetup(@Body() dto: { username: string; email: string; password: string }) {
-    return this.authService.initialSetup(dto);
+    try {
+      console.log('Setup request received:', { email: dto.email, username: dto.username });
+      return await this.authService.initialSetup(dto);
+    } catch (error) {
+      console.error('Setup endpoint error:', error);
+      throw error;
+    }
   }
 
   @Post('register')

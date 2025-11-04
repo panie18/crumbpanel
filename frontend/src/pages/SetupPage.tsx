@@ -50,11 +50,25 @@ export default function SetupPage() {
 		},
 		onError: (error: any) => {
 			console.error('Setup error:', error);
-			console.error('Error response:', error.response?.data);
-			const errorMessage = error.response?.data?.message || 
-							error.response?.data?.error ||
-							'Setup failed. Please try again.';
-			toast.error(errorMessage);
+			console.error('Error details:', {
+				message: error.message,
+				response: error.response?.data,
+				status: error.response?.status,
+			});
+			
+			let errorMessage = 'Setup failed. Please try again.';
+			
+			if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.response?.data?.error) {
+				errorMessage = error.response.data.error;
+			} else if (error.message === 'Network Error') {
+				errorMessage = 'Cannot connect to server. Please wait a moment and try again.';
+			} else if (error.code === 'ECONNREFUSED') {
+				errorMessage = 'Server is starting up. Please wait a moment...';
+			}
+			
+			toast.error(errorMessage, { duration: 5000 });
 		},
 	});
 

@@ -32,16 +32,28 @@ export class AuthService {
 
   async initialSetup(dto: { username: string; email: string; password: string }) {
     try {
+      console.log('Starting initial setup...');
+      
+      // Check database connection
+      try {
+        await this.prisma.$queryRaw`SELECT 1`;
+        console.log('✓ Database connection OK');
+      } catch (dbError) {
+        console.error('✗ Database connection failed:', dbError);
+        throw new Error('Database connection failed');
+      }
+
       const userCount = await this.prisma.user.count();
+      console.log('Current user count:', userCount);
       
       if (userCount > 0) {
         throw new ConflictException('Setup already completed');
       }
 
-      console.log('Creating initial admin user:', dto.email);
-
+      console.log('Hashing password...');
       const hashedPassword = await bcrypt.hash(dto.password, 12);
 
+      console.log('Creating user in database...');
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
@@ -56,10 +68,15 @@ export class AuthService {
         },
       });
 
+      console.log('✓ User created:', user.id);
+
+      console.log('Generating tokens...');
       const tokens = await this.generateTokens(user.id, user.email, user.role);
+      
+      console.log('Storing refresh token...');
       await this.storeRefreshToken(user.id, tokens.refreshToken);
 
-      console.log('✓ Initial setup completed successfully for:', dto.email);
+      console.log('✓ Setup completed successfully');
 
       return {
         user,
@@ -67,8 +84,22 @@ export class AuthService {
         message: 'Setup completed successfully',
       };
     } catch (error) {
-      console.error('Setup failed:', error);
-      throw error;
+      console.error('Setup failed with error:', error);
+      
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      
+      // Provide more specific error messages
+      if (error.code === 'P2002') {
+        throw new ConflictException('Email already exists');
+      }
+      
+      if (error.message?.includes('Database')) {
+        throw new Error('Database connection error. Please wait a moment and try again.');
+      }
+      
+      throw new Error(`Setup failed: ${error.message || 'Unknown error'}`);
     }
   }
 

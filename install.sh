@@ -187,9 +187,28 @@ echo -e "${GREEN}✓ Containers built${NC}"
 echo -e "${YELLOW}🚀 Starting CrumbPanel...${NC}"
 $USE_SUDO docker-compose up -d
 
+# Wait for database to be ready
+echo -e "${YELLOW}⏳ Waiting for database to be ready...${NC}"
+sleep 10
+
+# Check database health
+echo -e "${YELLOW}🔍 Checking database status...${NC}"
+for i in {1..30}; do
+  if $USE_SUDO docker-compose exec -T db pg_isready -U mc_admin -d mc_panel > /dev/null 2>&1; then
+    echo -e "${GREEN}✓ Database is ready${NC}"
+    break
+  fi
+  echo "Waiting for database... ($i/30)"
+  sleep 2
+done
+
+# Run migrations
+echo -e "${YELLOW}📦 Running database migrations...${NC}"
+$USE_SUDO docker-compose exec -T backend npx prisma migrate deploy || true
+
 # Wait for services to be ready
-echo -e "${YELLOW}⏳ Waiting for services to be ready...${NC}"
-sleep 15
+echo -e "${YELLOW}⏳ Waiting for services to start...${NC}"
+sleep 5
 
 # Check if containers are running
 RUNNING_CONTAINERS=$($USE_SUDO docker-compose ps -q | wc -l)

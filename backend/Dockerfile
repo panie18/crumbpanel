@@ -23,4 +23,5 @@ COPY --from=builder /app/package*.json ./
 
 EXPOSE 5829
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Wait for DB and run migrations, then start
+CMD ["sh", "-c", "sleep 5 && npx prisma migrate deploy && node dist/main.js"]
