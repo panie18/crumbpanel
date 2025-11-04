@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,14 +10,32 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
-import { Server } from 'lucide-react';
+import { Server, Eye, EyeOff } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5829/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@mcpanel.local');
   const [password, setPassword] = useState('admin123');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
+
+  // Check if setup is needed
+  const { data: setupStatus } = useQuery({
+    queryKey: ['setup-status'],
+    queryFn: async () => {
+      const response = await axios.get(`${API_URL}/auth/setup-status`);
+      return response.data;
+    },
+  });
+
+  useEffect(() => {
+    if (setupStatus?.needsSetup) {
+      navigate('/setup');
+    }
+  }, [setupStatus, navigate]);
 
   const loginMutation = useMutation({
     mutationFn: () => authApi.login(email, password),
@@ -28,7 +47,7 @@ export default function LoginPage() {
     },
     onError: (error: any) => {
       console.error('Login error:', error);
-      toast.error(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Login failed - Check your credentials');
     },
   });
 
@@ -36,6 +55,10 @@ export default function LoginPage() {
     e.preventDefault();
     loginMutation.mutate();
   };
+
+  if (setupStatus?.needsSetup) {
+    return null; // Will redirect to setup
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -90,19 +113,35 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="email"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <Button

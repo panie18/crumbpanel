@@ -11,6 +11,49 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  async getSetupStatus() {
+    const userCount = await this.prisma.user.count();
+    return {
+      isSetupComplete: userCount > 0,
+      needsSetup: userCount === 0,
+    };
+  }
+
+  async initialSetup(dto: { username: string; email: string; password: string }) {
+    const userCount = await this.prisma.user.count();
+    
+    if (userCount > 0) {
+      throw new ConflictException('Setup already completed');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        role: 'ADMIN',
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
+    });
+
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    console.log('✓ Initial setup completed for:', dto.email);
+
+    return {
+      user,
+      ...tokens,
+      message: 'Setup completed successfully',
+    };
+  }
+
   async register(dto: RegisterDto) {
     const exists = await this.prisma.user.findUnique({
       where: { email: dto.email },

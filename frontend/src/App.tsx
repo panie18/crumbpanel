@@ -10,6 +10,7 @@ import PlayersPage from './pages/PlayersPage';
 import BackupsPage from './pages/BackupsPage';
 import FilesPage from './pages/FilesPage';
 import SettingsPage from './pages/SettingsPage';
+import SetupPage from './pages/SetupPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -17,15 +18,21 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { theme } = useThemeStore();
+  const { theme, customPrimary, customAccent } = useThemeStore();
 
   useEffect(() => {
     // Set theme on mount
     document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+    // Apply custom colors
+    if (customPrimary && customAccent) {
+      document.documentElement.style.setProperty('--custom-primary', customPrimary);
+      document.documentElement.style.setProperty('--custom-accent', customAccent);
+    }
+  }, [theme, customPrimary, customAccent]);
 
   return (
     <Routes>
+      <Route path="/setup" element={<SetupPage />} />
       <Route path="/login" element={<LoginPage />} />
       
       <Route

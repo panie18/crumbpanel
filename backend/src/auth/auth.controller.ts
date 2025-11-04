@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, RefreshDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -6,6 +6,16 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
+
+  @Get('setup-status')
+  async getSetupStatus() {
+    return this.authService.getSetupStatus();
+  }
+
+  @Post('setup')
+  async initialSetup(@Body() dto: { username: string; email: string; password: string }) {
+    return this.authService.initialSetup(dto);
+  }
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
