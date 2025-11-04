@@ -61,7 +61,101 @@ find backend/src -name "strategies" -type d -exec rm -rf {} + 2>/dev/null || tru
 rm -f backend/src/servers/rcon.service.ts 2>/dev/null || true
 rm -f backend/src/index.ts 2>/dev/null || true
 
-echo -e "${GREEN}✓ Cleanup complete${NC}"
+# OVERWRITE with clean TypeORM files
+echo -e "${YELLOW}✏️ Creating clean TypeORM files...${NC}"
+
+# Overwrite auth.service.ts with clean version
+cat > backend/src/auth/auth.service.ts << 'EOF'
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { User } from '../entities/user.entity';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private jwtService: JwtService,
+  ) {}
+
+  async validateAuth0User(profile: any) {
+    const { id, emails, displayName, photos } = profile;
+    
+    let user = await this.userRepository.findOne({
+      where: { auth0Id: id },
+    });
+
+    if (!user) {
+      user = await this.userRepository.save({
+        auth0Id: id,
+        email: emails[0].value,
+        name: displayName,
+        picture: photos[0]?.value,
+        role: 'ADMIN',
+      });
+    }
+
+    return user;
+  }
+
+  async login(user: any) {
+    const payload = { 
+      sub: user.id, 
+      email: user.email,
+      role: user.role 
+    };
+    
+    return {
+      user,
+      accessToken: this.jwtService.sign(payload),
+    };
+  }
+}
+EOF
+
+# Overwrite servers.service.ts with clean version
+cat > backend/src/servers/servers.service.ts << 'EOF'
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Server } from '../entities/server.entity';
+
+@Injectable()
+export class ServersService {
+  constructor(
+    @InjectRepository(Server)
+    private serverRepository: Repository<Server>,
+  ) {}
+
+  async getAll() {
+    return this.serverRepository.find({
+      relations: ['players', 'backups'],
+    });
+  }
+
+  async create(data: any) {
+    return this.serverRepository.save({
+      name: data.name,
+      port: data.port,
+      rconPort: data.rconPort,
+      rconPassword: data.rconPassword,
+      version: data.version,
+      maxRam: data.maxRam,
+    });
+  }
+
+  async findById(id: string) {
+    return this.serverRepository.findOne({
+      where: { id },
+      relations: ['players', 'backups'],
+    });
+  }
+}
+EOF
+
+echo -e "${GREEN}✓ Clean files created${NC}"
 
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
