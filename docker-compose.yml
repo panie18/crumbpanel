@@ -10,23 +10,26 @@ services:
     container_name: mc_db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-mc_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mc_password}
+      POSTGRES_DB: ${POSTGRES_DB:-mc_panel}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 3s
-      timeout: 3s
-      retries: 10
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mc_admin} -d ${POSTGRES_DB:-mc_panel}"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     networks:
       - crumbpanel
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: mc_backend
     env_file: .env
     ports:
@@ -41,18 +44,27 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - PORT=5829
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-mc_admin}:${POSTGRES_PASSWORD:-mc_password}@db:5432/${POSTGRES_DB:-mc_panel}?schema=public
     networks:
       - crumbpanel
-    command: sh -c "sleep 5 && npx prisma migrate deploy && node dist/main.js"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5829/api/auth/setup-status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mc_frontend
     ports:
       - "8437:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - crumbpanel
