@@ -1,0 +1,44 @@
+# CrumbPanel - Minecraft Server Management Panel
+# Made by paulify.dev (https://paulify.eu)
+# Repository: https://github.com/panie18/crumbpanel
+
+services:
+  backend:
+    build: ./backend
+    container_name: mc_backend
+    ports:
+      - "5829:5829"
+    environment:
+      - NODE_ENV=production
+      - PORT=5829
+      - DATABASE_URL=file:./data/crumbpanel.db
+      - JWT_SECRET=crumbpanel_jwt_secret_min32chars_long
+      - JWT_REFRESH_SECRET=crumbpanel_refresh_secret_min32chars
+      - ENCRYPTION_KEY=crumbpanel_encryption_key_16ch
+      - AUTH0_DOMAIN=your-auth0-domain.auth0.com
+      - AUTH0_CLIENT_ID=your-auth0-client-id
+      - AUTH0_CLIENT_SECRET=your-auth0-client-secret
+    volumes:
+      - ./data:/app/data
+      - ./data/backups:/app/backups
+      - ./data/servers:/app/servers
+    restart: unless-stopped
+    networks:
+      - crumbpanel
+
+  frontend:
+    build: ./frontend
+    container_name: mc_frontend
+    ports:
+      - "8437:80"
+    environment:
+      - VITE_AUTH0_DOMAIN=your-auth0-domain.auth0.com
+      - VITE_AUTH0_CLIENT_ID=your-auth0-client-id
+      - VITE_API_URL=http://localhost:5829/api
+    restart: unless-stopped
+    networks:
+      - crumbpanel
+
+networks:
+  crumbpanel:
+    driver: bridge
