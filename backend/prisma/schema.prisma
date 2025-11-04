@@ -28,19 +28,21 @@ model RefreshToken {
 }
 
 model Server {
-  id           String    @id @default(cuid())
-  name         String
-  port         Int       @unique
-  rconPort     Int
-  rconPassword String
-  version      String
-  maxRam       Int
-  status       String    @default("STOPPED")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  players      Player[]
-  backups      Backup[]
-  metrics      Metric[]
+  id            String    @id @default(cuid())
+  name          String
+  path          String
+  port          Int       @unique
+  rconPort      Int       @unique
+  rconPassword  String
+  version       String
+  maxRam        Int
+  javaArgs      String    @default("-XX:+UseG1GC -XX:+ParallelRefProcEnabled")
+  status        String    @default("STOPPED")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  players       Player[]
+  backups       Backup[]
+  metrics       Metric[]
 }
 
 model Player {
@@ -61,6 +63,7 @@ model Backup {
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   filename  String
+  path      String
   size      BigInt
   createdAt DateTime @default(now())
 
@@ -73,9 +76,17 @@ model Metric {
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   cpuUsage  Float
   ramUsage  Float
-  tps       Float
   players   Int
   timestamp DateTime @default(now())
 
   @@index([serverId, timestamp])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  action    String
+  details   String?
+  ipAddress String?
 }
