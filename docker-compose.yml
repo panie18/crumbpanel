@@ -13,15 +13,13 @@ services:
       POSTGRES_PASSWORD: mc_password
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - crumbpanel
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mc_admin -d mc_panel"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
     build: 

@@ -2,52 +2,41 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - PostgreSQL Installation                 ║"
+echo "║  CrumbPanel - Installation                             ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
 echo "Stopping old containers..."
-docker-compose down -v
+docker-compose down -v 2>/dev/null
 
 echo "Removing old images..."
-docker rmi crumbpanel-backend crumbpanel-frontend 2>/dev/null
+docker rmi crumbpanel_backend crumbpanel_frontend crumbpanel-backend crumbpanel-frontend 2>/dev/null
 
 echo "Creating directories..."
 mkdir -p data/backups data/servers
 
 echo "Cleaning migrations..."
-rm -rf backend/prisma/migrations
+rm -rf backend/prisma/migrations 2>/dev/null
 
-echo "Building containers..."
-docker-compose build --no-cache
-
-echo "Starting services..."
-docker-compose up -d
+echo "Building and starting services..."
+docker-compose up -d --build
 
 echo ""
-echo "Waiting for backend to start..."
-sleep 10
+echo "Waiting for services to start (30 seconds)..."
+sleep 30
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  Checking Backend Logs                                 ║"
+echo "║  Installation Complete!                                ║"
 echo "╚════════════════════════════════════════════════════════╝"
-docker logs mc_backend
-
-echo ""
-echo "╔════════════════════════════════════════════════════════╗"
-echo "║  Container Status                                      ║"
-echo "╚════════════════════════════════════════════════════════╝"
-docker-compose ps
-
 echo ""
 echo "Frontend: http://localhost:8437"
 echo "Backend:  http://localhost:5829"
 echo ""
-echo "If backend failed, run: docker logs mc_backend"
+echo "Container Status:"
+docker-compose ps
 echo ""
-read -p "Show live logs? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    docker-compose logs -f
-fi
+echo "Backend Logs:"
+docker logs --tail 50 mc_backend
+echo ""
+echo "Frontend Logs:"
+docker logs --tail 20 mc_frontend
