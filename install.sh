@@ -1,41 +1,41 @@
 #!/bin/bash
+set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - Simple Installation                     ║"
+echo "║  CrumbPanel - Fresh Install (SQLite)                  ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
-# Cleanup
-echo "Cleaning up..."
+# Clean old run
+echo "Cleaning old containers/images..."
 docker stop mc_backend mc_frontend 2>/dev/null || true
 docker rm mc_backend mc_frontend 2>/dev/null || true
 docker network rm crumbpanel_crumbpanel 2>/dev/null || true
-docker rmi crumbpanel_backend crumbpanel_frontend 2>/dev/null || true
+docker rmi crumbpanel_backend crumbpanel-frontend crumbpanel_frontend crumbpanel-backend 2>/dev/null || true
 
-if [ -d "crumbpanel" ]; then
-    rm -rf crumbpanel
-fi
-
-# Clone
-echo "Cloning..."
+# Clone fresh repo
+if [ -d "crumbpanel" ]; then rm -rf crumbpanel; fi
+echo "Cloning repository..."
 git clone https://github.com/panie18/crumbpanel.git
 cd crumbpanel
 
-# Build
-echo "Building..."
+# Ensure data dirs
+mkdir -p data/backups data/servers data/database
+
+echo "Building containers..."
 docker-compose build --no-cache
 
-# Start
-echo "Starting..."
+echo "Starting services..."
 docker-compose up -d
 
-sleep 15
+echo "Waiting for backend..."
+sleep 10
 
-echo ""
-echo "╔════════════════════════════════════════════════════════╗"
-echo "║  DONE!                                                 ║"
-echo "╚════════════════════════════════════════════════════════╝"
-echo ""
-echo "Frontend: http://$(hostname -I | awk '{print $1}'):8437"
-echo ""
+echo "Containers:"
 docker-compose ps
-docker logs --tail 20 mc_backend
+
+IP=$(hostname -I | awk '{print $1}')
+echo "Frontend: http://$IP:8437"
+echo "Backend:  http://$IP:5829"
+
+echo "Backend logs (tail):"
+docker logs --tail 50 mc_backend || true

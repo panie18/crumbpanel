@@ -26,3 +26,8 @@ bootstrap().catch((err) => {
   console.error('❌ Failed to start backend:', err);
   process.exit(1);
 });
+
+import app from './app';
+
+const port = Number(process.env.PORT ?? 5829);
+app.listen(port, () => console.log(`✅ CrumbPanel backend listening on ${port}`));
