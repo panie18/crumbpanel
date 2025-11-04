@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy only clean TypeORM source files
+# Only copy the clean TypeORM files we created
 COPY src/entities ./src/entities/
 COPY src/database ./src/database/
 COPY src/auth/auth.module.ts ./src/auth/
