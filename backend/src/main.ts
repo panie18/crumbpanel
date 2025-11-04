@@ -1,51 +1,28 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import helmet from 'helmet';
-import * as express from 'express';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+  console.log('🚀 Starting CrumbPanel Backend...');
 
-  logger.log('🚀 Starting CrumbPanel Backend...');
+  const app = await NestFactory.create(AppModule, {
+    cors: true,
+    logger: console,
+  });
 
-  try {
-    const app = await NestFactory.create(AppModule, {
-      cors: true,
-      logger: ['log', 'error', 'warn', 'debug'],
-    });
+  app.enableCors({ origin: '*', credentials: true });
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.setGlobalPrefix('api');
 
-    app.enableCors({
-      origin: '*',
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    });
+  const port = parseInt(process.env.PORT) || 5829;
 
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: false,
-      }),
-    );
+  await app.listen(port, '0.0.0.0');
 
-    app.setGlobalPrefix('api');
-
-    const port = parseInt(process.env.PORT) || 5829;
-
-    await app.listen(port, '0.0.0.0'); // important: bind to all interfaces
-
-    logger.log(`
-╔════════════════════════════════════════════════════════╗
-║  ✅ Backend is READY                                  ║
-║  🌐 http://0.0.0.0:${port}                             ║
-║  📡 http://localhost:${port}/api                       ║
-╚════════════════════════════════════════════════════════╝
-    `);
-  } catch (error) {
-    logger.error('❌ Failed to start backend:', error);
-    process.exit(1);
-  }
+  console.log(`✅ Backend running on http://0.0.0.0:${port}`);
+  console.log(`📡 API available at http://localhost:${port}/api`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('❌ Failed to start backend:', err);
+  process.exit(1);
+});
