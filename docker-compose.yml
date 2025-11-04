@@ -4,14 +4,16 @@
 
 services:
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: mc_backend
     ports:
       - "5829:5829"
     environment:
       - NODE_ENV=production
       - PORT=5829
-      - DATABASE_URL=file:/app/data/crumbpanel.db
+      - DATABASE_URL=file:./data/crumbpanel.db
       - JWT_SECRET=crumbpanel_jwt_secret_min32chars_long
       - JWT_REFRESH_SECRET=crumbpanel_refresh_secret_min32chars
       - ENCRYPTION_KEY=crumbpanel_encryption_key_16ch
@@ -22,12 +24,22 @@ services:
     restart: unless-stopped
     networks:
       - crumbpanel
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5829/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mc_frontend
     ports:
       - "8437:80"
+    depends_on:
+      backend:
+        condition: service_started
     restart: unless-stopped
     networks:
       - crumbpanel

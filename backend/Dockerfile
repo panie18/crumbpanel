@@ -20,10 +20,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package*.json ./
 
-# Erstelle Datenbank-Ordner
 RUN mkdir -p /app/data
 
 EXPOSE 5829
 
-# Führe Prisma-Migration aus und starte dann die App
-CMD npx prisma migrate deploy && node dist/index.js
+CMD sh -c "npx prisma migrate deploy && node dist/index.js"
