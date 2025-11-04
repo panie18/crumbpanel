@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
 import { Server } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@mcpanel.local');
@@ -37,36 +38,41 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Theme Toggle in top right */}
+      <div className="fixed top-4 right-4">
+        <ThemeToggle />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card className="border-white/10">
+        <Card className="border-border">
           <CardHeader className="text-center space-y-4">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
-              className="mx-auto w-16 h-16 bg-white rounded-xl flex items-center justify-center"
+              className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center"
             >
-              <Server className="w-8 h-8 text-black" />
+              <Server className="w-8 h-8 text-primary-foreground" />
             </motion.div>
-            <CardTitle className="text-3xl text-white">
+            <CardTitle className="text-3xl">
               CrumbPanel
             </CardTitle>
-            <p className="text-gray-400">
+            <p className="text-muted-foreground">
               Sign in to continue
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Made by{' '}
               <a
                 href="https://paulify.eu"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-gray-300"
+                className="text-foreground hover:text-muted-foreground"
               >
                 paulify.dev
               </a>

@@ -12,6 +12,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '../ui/button';
 import { useState } from 'react';
+import ThemeToggle from '../ThemeToggle';
 
 const navigation = [
   { name: 'Servers', href: '/servers', icon: Server },
@@ -31,18 +32,21 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-background">
       {/* Sidebar */}
       <motion.aside
         initial={{ x: -300 }}
         animate={{ x: sidebarOpen ? 0 : -300 }}
-        className="fixed inset-y-0 left-0 z-50 w-64 glass-panel border-r border-white/10 md:translate-x-0 md:relative md:z-0"
+        className="fixed inset-y-0 left-0 z-50 w-64 glass-panel border-r border-border md:translate-x-0 md:relative md:z-0"
       >
         <div className="flex flex-col h-full p-6">
           {/* Logo */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white">CrumbPanel</h1>
-            <p className="text-sm text-gray-400">{user?.email}</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">CrumbPanel</h1>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+            <ThemeToggle />
           </div>
 
           {/* Navigation */}
