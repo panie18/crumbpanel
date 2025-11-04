@@ -3,73 +3,72 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String   @id @default(uuid())
+  id            String   @id @default(cuid())
   email         String   @unique
   password      String
-  role          Role     @default(USER)
+  role          String   @default("USER")
   createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
   refreshTokens RefreshToken[]
-  auditLogs     AuditLog[]
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   token     String   @unique
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Server {
-  id              String    @id @default(uuid())
-  name            String
-  host            String    @default("localhost")
-  port            Int
-  rconPort        Int
-  rconPassword    String
-  version         String
-  status          ServerStatus @default(STOPPED)
-  path            String
-  maxRam          Int       @default(2048)
-  javaArgs        String?
-  autoStart       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  backups         Backup[]
-  metrics         Metric[]
-  players         Player[]
+  id           String    @id @default(cuid())
+  name         String
+  port         Int       @unique
+  rconPort     Int
+  rconPassword String
+  version      String
+  maxRam       Int
+  status       String    @default("STOPPED")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  players      Player[]
+  backups      Backup[]
+  metrics      Metric[]
 }
 
 model Player {
-  id        String   @id @default(uuid())
-  uuid      String   @unique
+  id        String   @id @default(cuid())
   name      String
+  uuid      String   @unique
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   isOnline  Boolean  @default(false)
   lastSeen  DateTime @default(now())
-  playtime  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([serverId])
 }
 
 model Backup {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   filename  String
   size      BigInt
-  path      String
   createdAt DateTime @default(now())
+
+  @@index([serverId])
 }
 
 model Metric {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   cpuUsage  Float
@@ -77,28 +76,6 @@ model Metric {
   tps       Float
   players   Int
   timestamp DateTime @default(now())
-}
 
-model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action    String
-  details   String?
-  ip        String?
-  createdAt DateTime @default(now())
-}
-
-enum Role {
-  ADMIN
-  MODERATOR
-  USER
-}
-
-enum ServerStatus {
-  RUNNING
-  STOPPED
-  STARTING
-  STOPPING
-  ERROR
+  @@index([serverId, timestamp])
 }
