@@ -24,19 +24,31 @@ export class PlayersService {
 
       // Update database
       for (const playerName of players) {
-        await this.prisma.player.upsert({
-          where: { name: playerName },
-          update: {
-            isOnline: true,
-            lastSeen: new Date(),
-          },
-          create: {
+        const existingPlayer = await this.prisma.player.findFirst({
+          where: {
             name: playerName,
-            uuid: this.generateUUID(),
-            serverId,
-            isOnline: true,
+            serverId: serverId,
           },
         });
+
+        if (existingPlayer) {
+          await this.prisma.player.update({
+            where: { id: existingPlayer.id },
+            update: {
+              isOnline: true,
+              lastSeen: new Date(),
+            },
+          });
+        } else {
+          await this.prisma.player.create({
+            data: {
+              name: playerName,
+              uuid: this.generateUUID(),
+              serverId,
+              isOnline: true,
+            },
+          });
+        }
       }
 
       // Mark offline players

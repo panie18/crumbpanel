@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { createClient, WebDAVClient } from 'webdav';
+import { createClient, WebDAVClient, FileStat } from 'webdav';
 import * as fs from 'fs/promises';
 import { createReadStream, createWriteStream } from 'fs';
 
@@ -77,10 +77,10 @@ export class WebDavService {
     }
 
     try {
-      const contents = await this.client.getDirectoryContents(this.remotePath);
+      const contents = await this.client.getDirectoryContents(this.remotePath) as FileStat[];
       return contents
-        .filter((item: any) => item.type === 'file')
-        .map((item: any) => ({
+        .filter((item: FileStat) => item.type === 'file')
+        .map((item: FileStat) => ({
           filename: item.basename,
           size: item.size,
           lastModified: item.lastmod,

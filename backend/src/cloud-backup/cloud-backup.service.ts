@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WebDavService } from './webdav.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as archiver from 'archiver';
+import archiver from 'archiver';
 import { createWriteStream, createReadStream } from 'fs';
 
 @Injectable()
