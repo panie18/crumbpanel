@@ -141,7 +141,7 @@ export default function FilesPage() {
                     <div>
                       <p className="font-semibold">{file.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {!file.isDirectory && formatBytes(file.size)} &bull; {formatDate(file.modified)}
+                        {!file.isDirectory && formatBytes(file.size)} · {formatDate(file.modified)}
                       </p>
                     </div>
                   </div>
@@ -170,7 +170,7 @@ export default function FilesPage() {
                   </div>
                 </div>
               ))
-            }
+            )}
           </div>
         </CardContent>
       </Card>

@@ -180,7 +180,7 @@ export default function BackupsPage() {
                   <div>
                     <p className="font-semibold">{backup.filename}</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatBytes(backup.size)} &bull; {formatDate(backup.lastModified)}
+                      {formatBytes(backup.size)} · {formatDate(backup.lastModified)}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -190,7 +190,7 @@ export default function BackupsPage() {
                   </div>
                 </div>
               ))
-            }
+            )}
           </div>
         </CardContent>
       </Card>
@@ -229,7 +229,7 @@ export default function BackupsPage() {
                     <div>
                       <p className="font-semibold">{backup.filename}</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatBytes(Number(backup.size))} &bull; {formatDate(backup.createdAt)}
+                        {formatBytes(Number(backup.size))} · {formatDate(backup.createdAt)}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -260,7 +260,7 @@ export default function BackupsPage() {
                     </div>
                   </div>
                 ))
-              }
+              )}
             </div>
           </CardContent>
         </Card>
