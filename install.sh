@@ -36,22 +36,28 @@ fi
 # Create directories
 mkdir -p data/backups data/servers data/logs
 
+# Force docker compose to run from the correct directory and show helpful diagnostics if something fails.
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Always use the compose file from the project root
+DC="docker compose -f \"$ROOT_DIR/docker-compose.yml\""
+
 # Stop old
 echo -e "${YELLOW}Stopping old containers...${NC}"
-sudo docker-compose down -v 2>/dev/null || true
+eval $DC down -v 2>/dev/null || true
 
 # Build
 echo -e "${YELLOW}Building containers...${NC}"
-sudo docker-compose build --no-cache
+eval $DC build --no-cache
 
 # Start database
 echo -e "${YELLOW}Starting database...${NC}"
-sudo docker-compose up -d db
+eval $DC up -d db
 
 # Wait for DB
 echo -e "${YELLOW}Waiting for database...${NC}"
 for i in {1..60}; do
-  if sudo docker-compose exec -T db pg_isready -U mc_admin -d mc_panel > /dev/null 2>&1; then
+  if eval $DC exec -T db pg_isready -U ${POSTGRES_USER:-mc_admin} -d ${POSTGRES_DB:-mc_panel} >/dev/null 2>&1; then
     echo -e "${GREEN}✓ Database ready${NC}"
     break
   fi
@@ -60,18 +66,18 @@ done
 
 # Start backend
 echo -e "${YELLOW}Starting backend...${NC}"
-sudo docker-compose up -d backend
+eval $DC up -d backend
 
 # Wait for backend
 echo -e "${YELLOW}Waiting for backend...${NC}"
 for i in {1..90}; do
-  if curl -s http://localhost:5829/api/auth/setup-status > /dev/null 2>&1; then
+  if curl -s http://localhost:5829/api/auth/setup-status >/dev/null 2>&1; then
     echo -e "${GREEN}✓ Backend ready${NC}"
     break
   fi
   if [ $i -eq 90 ]; then
-    echo -e "${RED}Backend failed. Showing logs:${NC}"
-    sudo docker-compose logs backend
+    echo -e "${RED}Backend failed to start. Showing logs:${NC}"
+    eval $DC logs backend
     exit 1
   fi
   sleep 2
@@ -79,9 +85,22 @@ done
 
 # Start frontend
 echo -e "${YELLOW}Starting frontend...${NC}"
-sudo docker-compose up -d frontend
+eval $DC up -d frontend
 
-sleep 5
+# Wait for frontend
+echo -e "${YELLOW}Waiting for frontend...${NC}"
+for i in {1..30}; do
+  if curl -s http://localhost:8437 >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ Frontend ready${NC}"
+    break
+  fi
+  if [ $i -eq 30 ]; then
+    echo -e "${RED}Frontend failed to start. Showing logs:${NC}"
+    eval $DC logs frontend
+    exit 1
+  fi
+  sleep 1
+done
 
 IP=$(hostname -I | awk '{print $1}')
 
@@ -93,4 +112,4 @@ echo ""
 echo -e "${GREEN}🌐 Access: http://${IP}:8437${NC}"
 echo -e "${GREEN}🌐 Local:  http://localhost:8437${NC}"
 echo ""
-sudo docker-compose ps
+eval $DC ps

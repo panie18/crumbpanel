@@ -41,6 +41,12 @@ services:
       - ./data/backups:/app/backups
       - ./data/servers:/app/servers
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5829/api/auth/setup-status"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks: [crumbpanel]
 
   frontend:
@@ -49,8 +55,15 @@ services:
     ports:
       - "0.0.0.0:8437:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks: [crumbpanel]
 
 volumes:

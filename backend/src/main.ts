@@ -32,9 +32,8 @@ async function bootstrap() {
 
     app.setGlobalPrefix('api');
 
-    const port = parseInt(process.env.PORT) || 5829;
-
-    await app.listen(port, '0.0.0.0');
+    const port = parseInt(process.env.PORT || '5829', 10);
+    await app.listen(port, '0.0.0.0'); // important: bind to all interfaces
 
     logger.log(`
 ╔════════════════════════════════════════════════════════╗
