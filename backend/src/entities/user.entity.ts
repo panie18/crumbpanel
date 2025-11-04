@@ -6,16 +6,13 @@ export class User {
   id: string;
 
   @Column({ unique: true })
-  auth0Id: string;
-
-  @Column({ unique: true })
   email: string;
+
+  @Column()
+  password: string;
 
   @Column({ nullable: true })
   name: string;
-
-  @Column({ nullable: true })
-  picture: string;
 
   @Column({ default: 'USER' })
   role: string;

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
-import { Server, User, Mail, Lock, Palette, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Server, User, Mail, Lock, Palette, ArrowRight, ArrowLeft, Check, Eye, EyeOff } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const API_URL = 'http://localhost:5829/api';
@@ -30,6 +30,7 @@ export default function SetupPage() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
+	const [showPassword, setShowPassword] = useState(false);
 	const [selectedColor, setSelectedColor] = useState(PRESET_COLORS[0]);
 	const [customPrimary, setCustomPrimary] = useState('#000000');
 	const [customAccent, setCustomAccent] = useState('#ffffff');
@@ -37,23 +38,17 @@ export default function SetupPage() {
 	const { setAuth } = useAuthStore();
 	const { setCustomColors } = useThemeStore();
 
+	// Check if setup is needed
 	const { data: setupStatus } = useQuery({
 		queryKey: ['setup-status'],
 		queryFn: async () => {
 			try {
-				console.log('🔍 Checking setup status...');
-				const response = await axios.get(`${API_URL}/auth/setup-status`, {
-					timeout: 10000,
-				});
-				console.log('✅ Setup status:', response.data);
+				const response = await axios.get(`${API_URL}/auth/setup-status`);
 				return response.data;
 			} catch (error) {
-				console.error('❌ Setup status check failed:', error);
 				return { needsSetup: true };
 			}
 		},
-		retry: 2,
-		retryDelay: 1000,
 	});
 
 	useEffect(() => {
@@ -63,45 +58,17 @@ export default function SetupPage() {
 	}, [setupStatus, navigate]);
 
 	const setupMutation = useMutation({
-		mutationFn: async (data: { username: string; email: string; password: string }) => {
-			console.log('🚀 Starting setup with data:', { email: data.email, username: data.username });
-			
-			try {
-				const response = await axios.post(`${API_URL}/auth/setup`, data, {
-					timeout: 30000,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-				});
-				console.log('✅ Setup response:', response.data);
-				return response;
-			} catch (error) {
-				console.error('❌ Setup request failed:', error);
-				throw error;
-			}
-		},
+		mutationFn: (data: { username: string; email: string; password: string }) =>
+			axios.post(`${API_URL}/auth/setup`, data),
 		onSuccess: (response) => {
-			console.log('🎉 Setup successful!');
-			const { user, accessToken, refreshToken } = response.data;
-			setAuth(user, accessToken, refreshToken);
+			const { user, accessToken } = response.data;
+			setAuth(user, accessToken);
 			setCustomColors(customPrimary, customAccent);
 			toast.success('Welcome to CrumbPanel! 🎉');
 			navigate('/');
 		},
 		onError: (error: any) => {
-			console.error('💥 Setup failed:', error);
-			
-			let errorMessage = 'Setup failed. Please check the server logs.';
-			
-			if (error.response?.data?.message) {
-				errorMessage = error.response.data.message;
-			} else if (error.code === 'ECONNABORTED') {
-				errorMessage = 'Request timeout. Server might be slow to start.';
-			} else if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-				errorMessage = 'Cannot reach server. Make sure backend is running on port 5829.';
-			}
-			
-			toast.error(errorMessage, { duration: 8000 });
+			toast.error(error.response?.data?.message || 'Setup failed');
 		},
 	});
 
@@ -275,14 +242,24 @@ export default function SetupPage() {
 									</div>
 									<div className="space-y-2">
 										<Label htmlFor="password">Password</Label>
-										<Input
-											id="password"
-											type="password"
-											placeholder="••••••••"
-											value={password}
-											onChange={(e) => setPassword(e.target.value)}
-											autoFocus
-										/>
+										<div className="relative">
+											<Input
+												id="password"
+												type={showPassword ? 'text' : 'password'}
+												placeholder="••••••••"
+												value={password}
+												onChange={(e) => setPassword(e.target.value)}
+												autoFocus
+												className="pr-10"
+											/>
+											<button
+												type="button"
+												onClick={() => setShowPassword(!showPassword)}
+												className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+											>
+												{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+											</button>
+										</div>
 										<p className="text-xs text-muted-foreground">
 											Minimum 6 characters
 										</p>
@@ -359,72 +336,6 @@ export default function SetupPage() {
 													)}
 												</button>
 											))}
-										</div>
-									</div>
-
-									{/* Custom Colors */}
-									<div className="space-y-3">
-										<Label>Custom Colors</Label>
-										<div className="grid grid-cols-2 gap-4">
-											<div className="space-y-2">
-												<Label htmlFor="primary" className="text-xs">
-													Primary Color
-												</Label>
-												<div className="flex gap-2">
-													<Input
-														id="primary"
-														type="color"
-														value={customPrimary}
-														onChange={(e) => setCustomPrimary(e.target.value)}
-														className="h-10 w-full cursor-pointer"
-													/>
-													<Input
-														type="text"
-														value={customPrimary}
-														onChange={(e) => setCustomPrimary(e.target.value)}
-														className="w-24 font-mono text-xs"
-													/>
-												</div>
-											</div>
-											<div className="space-y-2">
-												<Label htmlFor="accent" className="text-xs">
-													Accent Color
-												</Label>
-												<div className="flex gap-2">
-													<Input
-														id="accent"
-														type="color"
-														value={customAccent}
-														onChange={(e) => setCustomAccent(e.target.value)}
-														className="h-10 w-full cursor-pointer"
-													/>
-													<Input
-														type="text"
-														value={customAccent}
-														onChange={(e) => setCustomAccent(e.target.value)}
-														className="w-24 font-mono text-xs"
-													/>
-												</div>
-											</div>
-										</div>
-									</div>
-
-									{/* Preview */}
-									<div className="p-4 rounded-lg border border-border space-y-2">
-										<p className="text-xs text-muted-foreground">Preview:</p>
-										<div className="flex gap-2">
-											<div
-												className="flex-1 h-12 rounded flex items-center justify-center text-sm font-medium"
-												style={{ backgroundColor: customPrimary, color: customAccent }}
-											>
-												Primary
-											</div>
-											<div
-												className="flex-1 h-12 rounded flex items-center justify-center text-sm font-medium"
-												style={{ backgroundColor: customAccent, color: customPrimary }}
-											>
-												Accent
-											</div>
 										</div>
 									</div>
 

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 
@@ -6,18 +6,19 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Get('login')
-  @UseGuards(AuthGuard('auth0'))
-  login() {
-    // Initiates Auth0 login
+  @Get('setup-status')
+  getSetupStatus() {
+    return this.authService.getSetupStatus();
   }
 
-  @Get('callback')
-  @UseGuards(AuthGuard('auth0'))
-  async callback(@Req() req: any, @Res() res: any) {
-    const result = await this.authService.login(req.user);
-    const token = result.accessToken;
-    res.redirect(`http://localhost:8437?token=${token}`);
+  @Post('setup')
+  setup(@Body() data: { username: string; email: string; password: string }) {
+    return this.authService.initialSetup(data);
+  }
+
+  @Post('login')
+  login(@Body() data: { email: string; password: string }) {
+    return this.authService.login(data.email, data.password);
   }
 
   @Get('me')
