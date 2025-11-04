@@ -7,33 +7,19 @@ import * as express from 'express';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
-  logger.log('🚀 Starting CrumbPanel Backend...');
-
   try {
+    logger.log('🚀 Starting CrumbPanel Backend...');
+
     const app = await NestFactory.create(AppModule, {
       cors: true,
-      logger: ['error', 'warn', 'log', 'debug'],
+      logger: ['log', 'error', 'warn', 'debug'],
     });
 
-    // CORS - Allow everything
     app.enableCors({
-      origin: true,
+      origin: '*',
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: '*',
     });
-
-    // Helmet with relaxed security for development
-    app.use(
-      helmet({
-        crossOriginResourcePolicy: { policy: 'cross-origin' },
-        crossOriginOpenerPolicy: false,
-        crossOriginEmbedderPolicy: false,
-      }),
-    );
-
-    app.use(express.json({ limit: '50mb' }));
-    app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
     app.useGlobalPipes(
       new ValidationPipe({
@@ -50,14 +36,14 @@ async function bootstrap() {
     await app.listen(port, '0.0.0.0');
 
     logger.log(`
-╔═══════════════════════════════════════════════════════════╗
-║   ✅ CrumbPanel Backend is READY                         ║
-║   🌐 Running on http://0.0.0.0:${port}                    ║
-║   📡 API: http://localhost:${port}/api                    ║
-╚═══════════════════════════════════════════════════════════╝
+╔════════════════════════════════════════════════════════╗
+║  ✅ Backend is READY                                  ║
+║  🌐 http://0.0.0.0:${port}                             ║
+║  📡 http://localhost:${port}/api                       ║
+╚════════════════════════════════════════════════════════╝
     `);
   } catch (error) {
-    logger.error('❌ Failed to start backend:', error);
+    logger.error('❌ Failed to start:', error);
     process.exit(1);
   }
 }
