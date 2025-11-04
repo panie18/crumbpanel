@@ -12,6 +12,12 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Install Git if needed
+if ! command -v git &> /dev/null; then
+    echo -e "${YELLOW}📦 Installing Git...${NC}"
+    sudo apt-get update && sudo apt-get install -y git
+fi
+
 # Install Docker if needed
 if ! command -v docker &> /dev/null; then
     echo -e "${YELLOW}📦 Installing Docker...${NC}"
