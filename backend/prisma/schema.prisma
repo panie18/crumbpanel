@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -8,10 +8,10 @@ generator client {
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String   @id @default(uuid())
   email         String   @unique
   password      String
-  role          String   @default("USER")
+  role          String   @default("user")
   createdAt     DateTime @default(now())
   refreshTokens RefreshToken[]
 }
@@ -28,16 +28,18 @@ model RefreshToken {
 }
 
 model Server {
-  id            String    @id @default(cuid())
+  id            String    @id @default(uuid())
   name          String
   path          String
+  host          String    @default("localhost")
   port          Int       @unique
   rconPort      Int       @unique
   rconPassword  String
   version       String
   maxRam        Int
   javaArgs      String    @default("-XX:+UseG1GC -XX:+ParallelRefProcEnabled")
-  status        String    @default("STOPPED")
+  autoStart     Boolean   @default(false)
+  status        String    @default("stopped")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   players       Player[]
@@ -46,11 +48,11 @@ model Server {
 }
 
 model Player {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
-  uuid      String   @unique
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  uuid      String
   isOnline  Boolean  @default(false)
   lastSeen  DateTime @default(now())
   createdAt DateTime @default(now())
@@ -59,34 +61,35 @@ model Player {
 }
 
 model Backup {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   filename  String
   path      String
-  size      BigInt
+  size      Int
   createdAt DateTime @default(now())
 
   @@index([serverId])
 }
 
 model Metric {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   cpuUsage  Float
   ramUsage  Float
   players   Int
-  timestamp DateTime @default(now())
+  tps       Float    @default(20.0)
+  createdAt DateTime @default(now())
 
   @@index([serverId, timestamp])
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   userId    String
   action    String
   details   String?
-  ipAddress String?
+  ip        String?
 }

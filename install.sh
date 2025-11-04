@@ -4,90 +4,76 @@ echo "╔═══════════════════════�
 echo "║  CrumbPanel - Installation Script                     ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
-# Prüfe ob Git installiert ist
-if ! command -v git &> /dev/null; then
-    echo "Error: Git is not installed. Please install git first."
-    exit 1
-fi
-
-# Prüfe ob Docker installiert ist
+# Prüfe Docker
 if ! command -v docker &> /dev/null; then
-    echo "Error: Docker is not installed. Please install Docker first."
+    echo "Error: Docker is not installed!"
     exit 1
 fi
 
-# Prüfe ob docker-compose installiert ist
 if ! command -v docker-compose &> /dev/null; then
-    echo "Error: docker-compose is not installed. Please install docker-compose first."
+    echo "Error: docker-compose is not installed!"
     exit 1
 fi
 
-# Lösche altes Verzeichnis falls vorhanden
+# Stoppe und lösche ALLE alten CrumbPanel Container
+echo "Cleaning up old installations..."
+docker stop mc_backend mc_frontend mc_db 2>/dev/null || true
+docker rm mc_backend mc_frontend mc_db 2>/dev/null || true
+docker network rm crumbpanel_crumbpanel 2>/dev/null || true
+docker volume rm crumbpanel_db_data 2>/dev/null || true
+docker rmi crumbpanel_backend crumbpanel_frontend crumbpanel-backend crumbpanel-frontend 2>/dev/null || true
+
+# Lösche altes Verzeichnis
 if [ -d "crumbpanel" ]; then
-    echo "Removing old installation..."
-    cd crumbpanel
-    docker-compose down -v 2>/dev/null || true
-    cd ..
+    echo "Removing old directory..."
     rm -rf crumbpanel
 fi
 
 # Clone Repository
-echo "Cloning CrumbPanel repository..."
+echo "Cloning repository..."
 git clone https://github.com/panie18/crumbpanel.git
 cd crumbpanel
 
 # Erstelle Ordner
 echo "Creating directories..."
-mkdir -p data/backups data/servers
+mkdir -p data/backups data/servers data/database
 
-# Baue und starte Container
+# Lösche alte Migrations
+rm -rf backend/prisma/migrations 2>/dev/null || true
+
+# Baue Container
 echo ""
-echo "Building Docker containers..."
-echo "This may take several minutes on first install..."
+echo "Building containers (this takes a few minutes)..."
 docker-compose build --no-cache
 
+# Starte Services
 echo ""
 echo "Starting services..."
 docker-compose up -d
 
-# Warte auf Start
+# Warte
 echo ""
-echo "Waiting for services to start (30 seconds)..."
-for i in {30..1}; do
-  printf "\rTime remaining: %02d seconds" $i
-  sleep 1
-done
-echo ""
+echo "Waiting for services..."
+sleep 20
 
-# Zeige Status
+# Status
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║  Installation Complete!                                ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
-echo "Access your panel at:"
-echo "  Frontend: http://$(hostname -I | awk '{print $1}'):8437"
-echo "  Backend:  http://$(hostname -I | awk '{print $1}'):5829"
+IP=$(hostname -I | awk '{print $1}')
+echo "Frontend: http://$IP:8437"
+echo "Backend:  http://$IP:5829"
 echo ""
 
-# Container Status
-echo "Container Status:"
 docker-compose ps
 
-# Zeige Logs
 echo ""
-echo "Recent Logs:"
-echo "─────────────────────────────────────────"
-docker logs --tail 20 mc_backend 2>/dev/null || echo "Backend starting..."
-echo ""
-docker logs --tail 10 mc_frontend 2>/dev/null || echo "Frontend starting..."
+echo "Backend Logs:"
+docker logs --tail 30 mc_backend
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  Useful Commands:                                      ║"
-echo "╠════════════════════════════════════════════════════════╣"
-echo "║  View logs:        docker-compose logs -f              ║"
-echo "║  Stop services:    docker-compose down                 ║"
-echo "║  Restart:          docker-compose restart              ║"
-echo "║  Update:           git pull && docker-compose up -d --build ║"
+echo "Commands: docker-compose logs -f | docker-compose down"
 echo "╚════════════════════════════════════════════════════════╝"
