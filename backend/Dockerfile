@@ -12,6 +12,7 @@ COPY src ./src
 # Generate Prisma client before build
 RUN npx prisma generate
 
+# Build TypeScript
 RUN npm run build
 
 FROM node:20-bullseye-slim
@@ -27,10 +28,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/dist ./dist
 
-# SQLite DB location (mounted via compose)
+# SQLite DB location
 RUN mkdir -p /app/data
 
 EXPOSE 5829
-
-# Sync schema, seed admin, start API
 CMD sh -c "npx prisma db push && node dist/scripts/seed.js && node dist/main.js"
