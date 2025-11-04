@@ -3,6 +3,26 @@
 # Repository: https://github.com/panie18/crumbpanel
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: mc_db
+    restart: always
+    environment:
+      POSTGRES_DB: mc_panel
+      POSTGRES_USER: mc_admin
+      POSTGRES_PASSWORD: mc_password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - crumbpanel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mc_admin -d mc_panel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: 
       context: ./backend
@@ -13,22 +33,19 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5829
-      - DATABASE_URL=file:./data/crumbpanel.db
+      - DATABASE_URL=postgresql://mc_admin:mc_password@db:5432/mc_panel
       - JWT_SECRET=crumbpanel_jwt_secret_min32chars_long
       - JWT_REFRESH_SECRET=crumbpanel_refresh_secret_min32chars
       - ENCRYPTION_KEY=crumbpanel_encryption_key_16ch
     volumes:
       - ./data/backups:/app/backups
       - ./data/servers:/app/servers
-      - ./data/database:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - crumbpanel
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5829/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   frontend:
     build:
@@ -38,11 +55,13 @@ services:
     ports:
       - "8437:80"
     depends_on:
-      backend:
-        condition: service_started
+      - backend
     restart: unless-stopped
     networks:
       - crumbpanel
+
+volumes:
+  db_data:
 
 networks:
   crumbpanel:
