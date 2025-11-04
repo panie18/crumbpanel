@@ -46,22 +46,22 @@ else
     git pull
 fi
 
-# AGGRESSIVE CLEANUP - Remove ALL broken files
-echo -e "${YELLOW}🧹 Removing ALL broken backend files...${NC}"
-rm -rf backend/src/audit 2>/dev/null || true
-rm -rf backend/src/cloud-backup 2>/dev/null || true
-rm -rf backend/src/files 2>/dev/null || true
-rm -rf backend/src/metrics 2>/dev/null || true
-rm -rf backend/src/players 2>/dev/null || true
-rm -rf backend/src/websocket 2>/dev/null || true
-rm -rf backend/src/prisma 2>/dev/null || true
-rm -rf backend/prisma 2>/dev/null || true
-rm -rf backend/src/auth/dto 2>/dev/null || true
-rm -rf backend/src/auth/guards 2>/dev/null || true
-rm -rf backend/src/auth/strategies 2>/dev/null || true
-rm -rf backend/src/servers/dto 2>/dev/null || true
+# COMPLETE CLEANUP - Remove ALL broken files with proper rm -rf
+echo -e "${YELLOW}🧹 Complete cleanup of broken files...${NC}"
+find backend/src -name "audit" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "cloud-backup" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "files" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "metrics" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "players" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "websocket" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "dto" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "guards" -type d -exec rm -rf {} + 2>/dev/null || true
+find backend/src -name "strategies" -type d -exec rm -rf {} + 2>/dev/null || true
 rm -f backend/src/servers/rcon.service.ts 2>/dev/null || true
 rm -f backend/src/index.ts 2>/dev/null || true
+
+echo -e "${GREEN}✓ Cleanup complete${NC}"
 
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
@@ -69,7 +69,7 @@ mkdir -p data/backups data/servers data/logs
 chmod -R 755 data
 
 # Remove old build artifacts
-echo -e "${YELLOW}🧹 Cleaning up build artifacts...${NC}"
+echo -e "${YELLOW}🧹 Cleaning build artifacts...${NC}"
 rm -rf backend/node_modules backend/dist 2>/dev/null || true
 rm -rf frontend/node_modules frontend/dist 2>/dev/null || true
 
@@ -77,27 +77,27 @@ rm -rf frontend/node_modules frontend/dist 2>/dev/null || true
 echo -e "${YELLOW}🛑 Stopping old containers...${NC}"
 docker compose down -v 2>/dev/null || true
 
-# Remove old images to force rebuild
+# Remove old images
 echo -e "${YELLOW}🗑️ Removing old images...${NC}"
 docker image rm crumbpanel-backend crumbpanel-frontend 2>/dev/null || true
 
 # Build fresh containers
-echo -e "${YELLOW}🔨 Building containers (this may take a few minutes)...${NC}"
+echo -e "${YELLOW}🔨 Building containers...${NC}"
 docker compose build --no-cache
 
 # Start containers
 echo -e "${YELLOW}🚀 Starting containers...${NC}"
 docker compose up -d
 
-# Wait for backend to start
-echo -e "${YELLOW}⏳ Waiting for backend to be ready...${NC}"
+# Wait for backend
+echo -e "${YELLOW}⏳ Waiting for backend...${NC}"
 for i in {1..60}; do
   if curl -s http://localhost:5829/api/auth/me > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Backend is ready${NC}"
+    echo -e "${GREEN}✓ Backend ready${NC}"
     break
   fi
   if [ $i -eq 60 ]; then
-    echo -e "${RED}Backend failed to start. Logs:${NC}"
+    echo -e "${RED}Backend failed. Logs:${NC}"
     docker compose logs backend
     exit 1
   fi
@@ -109,18 +109,17 @@ done
 echo -e "${YELLOW}⏳ Waiting for frontend...${NC}"
 for i in {1..30}; do
   if curl -s http://localhost:8437 > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Frontend is ready${NC}"
+    echo -e "${GREEN}✓ Frontend ready${NC}"
     break
   fi
   if [ $i -eq 30 ]; then
-    echo -e "${RED}Frontend failed to start. Logs:${NC}"
+    echo -e "${RED}Frontend failed. Logs:${NC}"
     docker compose logs frontend
     exit 1
   fi
   sleep 1
 done
 
-# Get server IP
 IP=$(hostname -I | awk '{print $1}')
 
 echo ""
@@ -129,34 +128,11 @@ echo "║            ✅ INSTALLATION COMPLETE! ✅                ║"
 echo "║          Made by paulify.dev (https://paulify.eu)     ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${GREEN}🌐 Access CrumbPanel:${NC}"
-echo -e "   Local:    http://localhost:8437"
-echo -e "   Network:  http://${IP}:8437"
+echo -e "${GREEN}🌐 Access: http://${IP}:8437${NC}"
+echo -e "${GREEN}🔧 API: http://localhost:5829/api${NC}"
+echo -e "${GREEN}💾 Database: SQLite in ./data/crumbpanel.db${NC}"
 echo ""
-echo -e "${GREEN}🔧 Backend API:${NC}"
-echo -e "   URL:      http://localhost:5829/api"
-echo ""
-echo -e "${GREEN}💾 Database:${NC}"
-echo -e "   Type:     SQLite"
-echo -e "   Location: ./data/crumbpanel.db"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo "📊 Container Status:"
 docker compose ps
 echo ""
-echo -e "${BLUE}📋 Useful Commands:${NC}"
-echo "   View logs:     docker compose logs -f"
-echo "   Stop:          docker compose stop"
-echo "   Start:         docker compose start"
-echo "   Restart:       docker compose restart"
-echo "   Update:        git pull && ./install.sh"
-echo ""
-echo -e "${YELLOW}🔐 Auth0 Setup Required:${NC}"
-echo "   1. Create Auth0 app at https://manage.auth0.com"
-echo "   2. Set callback URL: http://${IP}:8437/api/auth/callback"
-echo "   3. Update docker-compose.yml with your Auth0 credentials"
-echo ""
-echo -e "${GREEN}⭐ Star the project: ${BLUE}https://github.com/panie18/crumbpanel${NC}"
-echo -e "${GREEN}🌐 Visit: ${BLUE}https://paulify.eu${NC}"
-echo ""
+echo -e "${YELLOW}🔐 Configure Auth0 at https://manage.auth0.com${NC}"
+echo -e "${GREEN}⭐ Star: https://github.com/panie18/crumbpanel${NC}"
