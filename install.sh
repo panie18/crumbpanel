@@ -24,15 +24,30 @@ echo "Starting services..."
 docker-compose up -d
 
 echo ""
+echo "Waiting for backend to start..."
+sleep 10
+
+echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  Installation Complete!                                ║"
+echo "║  Checking Backend Logs                                 ║"
 echo "╚════════════════════════════════════════════════════════╝"
+docker logs mc_backend
+
+echo ""
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║  Container Status                                      ║"
+echo "╚════════════════════════════════════════════════════════╝"
+docker-compose ps
+
 echo ""
 echo "Frontend: http://localhost:8437"
 echo "Backend:  http://localhost:5829"
 echo ""
-echo "Container Status:"
-docker-compose ps
+echo "If backend failed, run: docker logs mc_backend"
 echo ""
-echo "Logs (Ctrl+C to exit):"
-docker-compose logs -f
+read -p "Show live logs? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    docker-compose logs -f
+fi

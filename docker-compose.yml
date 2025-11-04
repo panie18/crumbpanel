@@ -33,7 +33,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=5829
-      - DATABASE_URL=postgresql://mc_admin:mc_password@db:5432/mc_panel
+      - DATABASE_URL=postgresql://mc_admin:mc_password@db:5432/mc_panel?schema=public
       - JWT_SECRET=crumbpanel_jwt_secret_min32chars_long
       - JWT_REFRESH_SECRET=crumbpanel_refresh_secret_min32chars
       - ENCRYPTION_KEY=crumbpanel_encryption_key_16ch
@@ -54,8 +54,6 @@ services:
     container_name: mc_frontend
     ports:
       - "8437:80"
-    depends_on:
-      - backend
     restart: unless-stopped
     networks:
       - crumbpanel
