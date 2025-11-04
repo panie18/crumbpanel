@@ -1,24 +1,18 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit {
-  private readonly logger = new Logger(PrismaService.name);
-
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
-    let retries = 30;
-    while (retries > 0) {
-      try {
-        await this.$connect();
-        this.logger.log('✅ Connected to database');
-        return;
-      } catch (error) {
-        retries--;
-        this.logger.warn(`⏳ Database connection failed, retrying... (${retries} left)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
+    try {
+      await this.$connect();
+      console.log('✅ Database connected');
+    } catch (error) {
+      console.error('❌ Database connection failed:', error);
     }
-    this.logger.error('❌ Could not connect to database');
-    process.exit(1);
+  }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
   }
 }

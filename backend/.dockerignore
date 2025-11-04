@@ -7,3 +7,16 @@ dist
 .git
 .gitignore
 README.md
+# Exclude all old broken source files
+src/audit
+src/cloud-backup
+src/files
+src/metrics
+src/players
+src/websocket
+src/auth/dto
+src/auth/guards
+src/auth/strategies
+src/servers/dto
+src/servers/rcon.service.ts
+src/index.ts

@@ -7,9 +7,9 @@ import { AuthService } from './auth.service';
 export class Auth0Strategy extends PassportStrategy(Strategy, 'auth0') {
   constructor(private authService: AuthService) {
     super({
-      domain: process.env.AUTH0_DOMAIN,
-      clientID: process.env.AUTH0_CLIENT_ID,
-      clientSecret: process.env.AUTH0_CLIENT_SECRET,
+      domain: process.env.AUTH0_DOMAIN || 'placeholder.auth0.com',
+      clientID: process.env.AUTH0_CLIENT_ID || 'placeholder',
+      clientSecret: process.env.AUTH0_CLIENT_SECRET || 'placeholder',
       callbackURL: '/api/auth/callback',
       scope: 'openid profile email',
     });

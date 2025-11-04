@@ -2,37 +2,49 @@
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - SQLite + Auth0 Installation             ║"
+echo "║  CrumbPanel - CLEAN BUILD Installation                ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
 cd ~/crumbpanel || exit 1
 
+# Clean backend
+echo "🧹 Cleaning backend..."
+rm -rf backend/node_modules backend/dist
+rm -rf backend/src/audit backend/src/cloud-backup backend/src/files 
+rm -rf backend/src/metrics backend/src/players backend/src/websocket
+rm -rf backend/src/auth/dto backend/src/auth/guards backend/src/auth/strategies
+rm -rf backend/src/servers/dto
+rm -f backend/src/servers/rcon.service.ts
+rm -f backend/src/index.ts
+
 mkdir -p data/backups data/servers data/logs
 
-echo "Stopping old containers..."
+echo "🛑 Stopping old containers..."
 docker compose down -v 2>/dev/null || true
 
-echo "Building containers..."
-docker compose build --no-cache
+echo "🔨 Building clean backend..."
+docker compose build --no-cache backend
 
-echo "Starting containers..."
+echo "🎨 Building frontend..."
+docker compose build --no-cache frontend
+
+echo "🚀 Starting containers..."
 docker compose up -d
 
-echo "Waiting 20 seconds..."
-sleep 20
+echo "⏳ Waiting 30 seconds..."
+sleep 30
 
 IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  ✅ INSTALLATION COMPLETE!                            ║"
+echo "║  ✅ CLEAN INSTALLATION COMPLETE!                      ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 echo "🌐 Access: http://${IP}:8437"
 echo ""
-echo "⚠️  Configure Auth0:"
-echo "   1. Create Auth0 app at https://manage.auth0.com"
-echo "   2. Set callback URL: http://${IP}:8437/api/auth/callback"
-echo "   3. Update docker-compose.yml with your Auth0 credentials"
-echo ""
+echo "Container Status:"
 docker compose ps
+echo ""
+echo "Backend Logs:"
+docker compose logs backend --tail=10
