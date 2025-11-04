@@ -35,7 +35,7 @@ app.get('/health', (_req, res) => {
 
 const port = process.env.PORT || 5829;
 app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
+  console.log(`Server running on port ${port}`);
 });
 
 // Handle shutdown
