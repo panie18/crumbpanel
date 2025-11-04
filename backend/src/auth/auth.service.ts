@@ -252,7 +252,7 @@ export class AuthService {
           email: emails[0].value,
           name: displayName,
           picture: photos[0]?.value,
-          role: 'ADMIN', // First user is admin
+          role: 'ADMIN',
         },
       });
     }

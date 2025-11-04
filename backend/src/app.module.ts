@@ -4,12 +4,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ServersModule } from './servers/servers.module';
-import { PlayersModule } from './players/players.module';
-import { MetricsModule } from './metrics/metrics.module';
-import { FilesModule } from './files/files.module';
-import { WebSocketModule } from './websocket/websocket.module';
-import { AuditModule } from './audit/audit.module';
-import { CloudBackupModule } from './cloud-backup/cloud-backup.module';
 
 @Module({
   imports: [
@@ -18,16 +12,12 @@ import { CloudBackupModule } from './cloud-backup/cloud-backup.module';
     }),
     JwtModule.register({
       global: true,
+      secret: process.env.JWT_SECRET || 'fallback-secret',
+      signOptions: { expiresIn: '1h' },
     }),
     PrismaModule,
     AuthModule,
     ServersModule,
-    PlayersModule,
-    MetricsModule,
-    FilesModule,
-    WebSocketModule,
-    AuditModule,
-    CloudBackupModule,
   ],
 })
 export class AppModule {}

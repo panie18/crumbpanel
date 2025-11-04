@@ -47,7 +47,7 @@ export class AuthController {
 
   @Get('login')
   @UseGuards(AuthGuard('auth0'))
-  async login() {
+  login() {
     // Initiates Auth0 login
   }
 
