@@ -1,48 +1,93 @@
 #!/bin/bash
-set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║  CrumbPanel - Installation                             ║"
+echo "║  CrumbPanel - Installation Script                     ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
-echo "Stopping old containers..."
-docker-compose down -v 2>/dev/null
+# Prüfe ob Git installiert ist
+if ! command -v git &> /dev/null; then
+    echo "Error: Git is not installed. Please install git first."
+    exit 1
+fi
 
-echo "Removing old images..."
-docker rmi crumbpanel_backend crumbpanel_frontend crumbpanel-backend crumbpanel-frontend 2>/dev/null
+# Prüfe ob Docker installiert ist
+if ! command -v docker &> /dev/null; then
+    echo "Error: Docker is not installed. Please install Docker first."
+    exit 1
+fi
 
+# Prüfe ob docker-compose installiert ist
+if ! command -v docker-compose &> /dev/null; then
+    echo "Error: docker-compose is not installed. Please install docker-compose first."
+    exit 1
+fi
+
+# Lösche altes Verzeichnis falls vorhanden
+if [ -d "crumbpanel" ]; then
+    echo "Removing old installation..."
+    cd crumbpanel
+    docker-compose down -v 2>/dev/null || true
+    cd ..
+    rm -rf crumbpanel
+fi
+
+# Clone Repository
+echo "Cloning CrumbPanel repository..."
+git clone https://github.com/panie18/crumbpanel.git
+cd crumbpanel
+
+# Erstelle Ordner
 echo "Creating directories..."
 mkdir -p data/backups data/servers
 
-echo "Cleaning old migrations..."
-rm -rf backend/prisma/migrations 2>/dev/null
+# Baue und starte Container
+echo ""
+echo "Building Docker containers..."
+echo "This may take several minutes on first install..."
+docker-compose build --no-cache
 
 echo ""
-echo "Building and starting all services..."
-docker-compose up -d --build
+echo "Starting services..."
+docker-compose up -d
 
+# Warte auf Start
 echo ""
-echo "Waiting for services to start..."
-sleep 15
+echo "Waiting for services to start (30 seconds)..."
+for i in {30..1}; do
+  printf "\rTime remaining: %02d seconds" $i
+  sleep 1
+done
+echo ""
 
+# Zeige Status
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║  Installation Complete!                                ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 echo "Access your panel at:"
-echo "  Frontend: http://localhost:8437"
-echo "  Backend:  http://localhost:5829"
+echo "  Frontend: http://$(hostname -I | awk '{print $1}'):8437"
+echo "  Backend:  http://$(hostname -I | awk '{print $1}'):5829"
 echo ""
 
+# Container Status
 echo "Container Status:"
 docker-compose ps
 
+# Zeige Logs
 echo ""
-echo "Backend Logs (last 30 lines):"
-docker logs --tail 30 mc_backend
+echo "Recent Logs:"
+echo "─────────────────────────────────────────"
+docker logs --tail 20 mc_backend 2>/dev/null || echo "Backend starting..."
+echo ""
+docker logs --tail 10 mc_frontend 2>/dev/null || echo "Frontend starting..."
 
 echo ""
-echo "Setup complete! Press Ctrl+C to exit, or wait to see live logs..."
-sleep 3
-docker-compose logs -f
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║  Useful Commands:                                      ║"
+echo "╠════════════════════════════════════════════════════════╣"
+echo "║  View logs:        docker-compose logs -f              ║"
+echo "║  Stop services:    docker-compose down                 ║"
+echo "║  Restart:          docker-compose restart              ║"
+echo "║  Update:           git pull && docker-compose up -d --build ║"
+echo "╚════════════════════════════════════════════════════════╝"
