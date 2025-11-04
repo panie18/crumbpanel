@@ -174,3 +174,110 @@ docker-compose exec db psql -U mc_admin -d mc_panel
 docker-compose exec db pg_dump -U mc_admin mc_panel > backup.sql
 ```
 
+## 🔄 Updates
+
+**Easy update with install script (recommended):**
+
+```bash
+cd crumbpanel
+git pull
+./install.sh
+```
+
+The script will:
+- ✅ Keep all your server data
+- ✅ Keep all backups
+- ✅ Keep database with users
+- ✅ Keep your `.env` configuration
+- ✅ Only update the application containers
+
+**Manual update:**
+
+```bash
+cd crumbpanel
+git pull
+docker-compose down    # Stops containers but keeps volumes
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+⚠️ **Never use `docker-compose down -v`** - this deletes all data including servers!
+
+---
+
+## 🐛 Troubleshooting
+
+### Docker Permission Denied Error
+
+If you get a "Permission denied" error when running Docker commands:
+
+```bash
+# Add your user to the docker group
+sudo usermod -aG docker $USER
+
+# Log out and log back in, or run:
+newgrp docker
+
+# Verify docker works without sudo
+docker ps
+```
+
+### Port Already in Use
+
+If ports 8437 or 5829 are already in use:
+
+```bash
+# Check what's using the port
+sudo lsof -i :8437
+sudo lsof -i :5829
+
+# Edit .env and docker-compose.yml to use different ports
+```
+
+### Containers Won't Start
+
+```bash
+# Check logs
+docker-compose logs -f
+
+# Rebuild containers
+docker-compose down
+docker-compose up -d --build
+
+# Reset everything (WARNING: deletes all data)
+docker-compose down -v
+rm -rf data/
+./install.sh
+```
+
+### Database Connection Issues
+
+```bash
+# Check if database is running
+docker-compose ps
+
+# Restart database
+docker-compose restart db
+
+# Check database logs
+docker-compose logs db
+```
+
+### WebDAV Cloud Backup Issues
+
+Make sure your WebDAV credentials are correct in `.env`:
+
+```env
+WEBDAV_URL=https://your-nextcloud.com/remote.php/dav/files/username/
+WEBDAV_USERNAME=your_username
+WEBDAV_PASSWORD=your_app_password  # Use app password, not main password
+WEBDAV_REMOTE_PATH=/minecraft-backups
+```
+
+For Nextcloud:
+1. Go to Settings → Security
+2. Create a new app password
+3. Use that password in WEBDAV_PASSWORD
+
+---
+

@@ -24,13 +24,43 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # Check Docker installation
+DOCKER_INSTALLED=false
 if ! command -v docker &> /dev/null; then
   echo -e "${YELLOW}📦 Installing Docker...${NC}"
   curl -fsSL https://get.docker.com | sh
-  sudo usermod -aG docker $USER
+  DOCKER_INSTALLED=true
   echo -e "${GREEN}✓ Docker installed${NC}"
 else
   echo -e "${GREEN}✓ Docker already installed${NC}"
+fi
+
+# Add user to docker group
+if ! groups $USER | grep -q '\bdocker\b'; then
+  echo -e "${YELLOW}🔐 Adding user to docker group...${NC}"
+  sudo usermod -aG docker $USER
+  echo -e "${GREEN}✓ User added to docker group${NC}"
+  
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${YELLOW}⚠️  IMPORTANT: Docker group membership updated!${NC}"
+  echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+  echo -e "${RED}You need to log out and log back in for this to take effect.${NC}"
+  echo ""
+  echo "Options:"
+  echo "  1) Log out and log back in, then run this script again"
+  echo "  2) Use 'newgrp docker' and run this script again"
+  echo "  3) Continue with sudo (not recommended)"
+  echo ""
+  read -p "Do you want to continue with sudo? (y/N): " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo -e "${YELLOW}Installation paused. Please log out and run the script again.${NC}"
+    echo -e "${GREEN}Quick fix: Run 'newgrp docker' and then rerun this script.${NC}"
+    exit 0
+  fi
+  USE_SUDO="sudo"
+else
+  echo -e "${GREEN}✓ User already in docker group${NC}"
+  USE_SUDO=""
 fi
 
 # Check Docker Compose installation
@@ -54,6 +84,51 @@ else
   cd $REPO_DIR
   echo -e "${YELLOW}📥 Pulling latest changes...${NC}"
   git pull
+  
+  # Check if CrumbPanel is already running
+  if $USE_SUDO docker-compose ps -q 2>/dev/null | grep -q .; then
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${YELLOW}🔄 Existing CrumbPanel installation detected!${NC}"
+    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+    echo "This will update CrumbPanel to the latest version."
+    echo -e "${GREEN}✓ Your server data will be preserved${NC}"
+    echo -e "${GREEN}✓ Backups will be kept${NC}"
+    echo -e "${GREEN}✓ Database will be kept${NC}"
+    echo ""
+    read -p "Do you want to update now? (Y/n): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+      echo -e "${YELLOW}🔄 Updating CrumbPanel...${NC}"
+      
+      # Create backup of .env if it exists
+      if [ -f ".env" ]; then
+        echo -e "${YELLOW}💾 Backing up .env file...${NC}"
+        cp .env .env.backup.$(date +%Y%m%d_%H%M%S)
+        echo -e "${GREEN}✓ .env backed up${NC}"
+      fi
+      
+      # Stop containers (but keep volumes with data)
+      echo -e "${YELLOW}⏸️  Stopping old containers...${NC}"
+      $USE_SUDO docker-compose stop
+      echo -e "${GREEN}✓ Containers stopped${NC}"
+      
+      # Remove old containers and images (keeps volumes!)
+      echo -e "${YELLOW}🗑️  Removing old containers...${NC}"
+      $USE_SUDO docker-compose rm -f
+      echo -e "${GREEN}✓ Old containers removed${NC}"
+      
+      # Remove old images to force rebuild
+      echo -e "${YELLOW}🗑️  Removing old images...${NC}"
+      $USE_SUDO docker images | grep crumbpanel | awk '{print $3}' | xargs -r $USE_SUDO docker rmi -f 2>/dev/null || true
+      echo -e "${GREEN}✓ Old images removed${NC}"
+      
+      echo -e "${GREEN}✓ Update preparation complete${NC}"
+    else
+      echo -e "${YELLOW}Update cancelled.${NC}"
+      exit 0
+    fi
+  fi
 fi
 
 # Create .env file
@@ -95,7 +170,7 @@ ADMIN_PASSWORD=admin123
 EOF
   echo -e "${GREEN}✓ Configuration created with secure random secrets${NC}"
 else
-  echo -e "${GREEN}✓ Configuration file already exists${NC}"
+  echo -e "${GREEN}✓ Configuration file already exists (keeping existing)${NC}"
 fi
 
 # Create data directories
@@ -106,23 +181,23 @@ echo -e "${GREEN}✓ Directories created${NC}"
 
 # Build and start Docker containers
 echo -e "${YELLOW}🐳 Building Docker containers (this may take a few minutes)...${NC}"
-docker-compose down 2>/dev/null || true
-docker-compose build --no-cache
+$USE_SUDO docker-compose build --no-cache
 echo -e "${GREEN}✓ Containers built${NC}"
 
 echo -e "${YELLOW}🚀 Starting CrumbPanel...${NC}"
-docker-compose up -d
+$USE_SUDO docker-compose up -d
 
 # Wait for services to be ready
 echo -e "${YELLOW}⏳ Waiting for services to be ready...${NC}"
 sleep 15
 
 # Check if containers are running
-if [ "$(docker-compose ps -q | wc -l)" -gt 0 ]; then
+RUNNING_CONTAINERS=$($USE_SUDO docker-compose ps -q | wc -l)
+if [ "$RUNNING_CONTAINERS" -gt 0 ]; then
   echo -e "${GREEN}✓ All services started successfully${NC}"
 else
   echo -e "${RED}✗ Error: Some services failed to start${NC}"
-  echo -e "${YELLOW}Run 'docker-compose logs' for details${NC}"
+  echo -e "${YELLOW}Run '$USE_SUDO docker-compose logs' for details${NC}"
   exit 1
 fi
 
@@ -148,17 +223,21 @@ echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo "Container Status:"
-docker-compose ps
+$USE_SUDO docker-compose ps
 echo ""
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${GREEN}📚 Useful Commands:${NC}"
-echo "   View logs:           docker-compose logs -f"
-echo "   Stop panel:          docker-compose stop"
-echo "   Start panel:         docker-compose start"
-echo "   Restart panel:       docker-compose restart"
-echo "   Update panel:        git pull && docker-compose up -d --build"
+echo "   View logs:           ${USE_SUDO} docker-compose logs -f"
+echo "   Stop panel:          ${USE_SUDO} docker-compose stop"
+echo "   Start panel:         ${USE_SUDO} docker-compose start"
+echo "   Restart panel:       ${USE_SUDO} docker-compose restart"
+echo "   Update panel:        git pull && ./install.sh"
 echo ""
+if [ -n "$USE_SUDO" ]; then
+  echo -e "${YELLOW}💡 To avoid using sudo, log out and log back in (or run 'newgrp docker')${NC}"
+  echo ""
+fi
 echo -e "${YELLOW}💡 Tip: Configure WebDAV cloud backups in the Settings page!${NC}"
 echo ""
 echo -e "${GREEN}⭐ Star the project: ${BLUE}https://github.com/panie18/crumbpanel${NC}"
