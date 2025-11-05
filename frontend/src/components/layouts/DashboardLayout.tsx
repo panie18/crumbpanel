@@ -104,22 +104,18 @@ export default function DashboardLayout() {
           </div>
           <div className="mt-8 flex-grow flex flex-col">
             <nav className="flex-1 px-2 space-y-1">
-              {navigation.map((item) => {
+              {navigation.map((item, index) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <Link
-                    key={item.name}
+                    key={index}
                     to={item.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-accent",
-                      isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
-                    )}
+                    className={isActive 
+                      ? "flex items-center gap-3 rounded-lg px-3 py-2 bg-accent text-accent-foreground transition-all hover:bg-accent"
+                      : "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-accent"
+                    }
                   >
-                    <item.icon
-                      className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                        isActive ? 'text-primary-foreground' : 'text-muted-foreground'
-                      }`}
-                    />
+                    <item.icon className="h-4 w-4" />
                     {item.name}
                   </Link>
                 );
