@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 
@@ -30,5 +30,36 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   me(@Req() req: any) {
     return req.user;
+  }
+
+  @Patch('profile-picture')
+  @UseGuards(AuthGuard('jwt'))
+  async updateProfilePicture(@Req() req: any, @Body() data: { pictureUrl: string }) {
+    try {
+      console.log('🖼️ [AUTH] Updating profile picture for user:', req.user.id);
+      
+      await this.userRepository.update(req.user.id, {
+        picture: data.pictureUrl
+      });
+      
+      const updatedUser = await this.userRepository.findOne({
+        where: { id: req.user.id }
+      });
+      
+      console.log('✅ [AUTH] Profile picture updated');
+      return { 
+        success: true,
+        user: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          name: updatedUser.name,
+          picture: updatedUser.picture,
+          role: updatedUser.role
+        }
+      };
+    } catch (error) {
+      console.error('❌ [AUTH] Failed to update profile picture:', error);
+      throw new Error('Failed to update profile picture');
+    }
   }
 }

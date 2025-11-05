@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import ThemeToggle from '@/components/ThemeToggle';
+import UnsplashPicker from '@/components/UnsplashPicker';
+import axios from 'axios';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Server, current: true },
@@ -37,8 +39,9 @@ const navigation = [
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unsplashOpen, setUnsplashOpen] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setAuth } = useAuthStore();
   const { customPrimary } = useThemeStore();
 
   const handleLogout = () => {
@@ -49,6 +52,35 @@ export default function DashboardLayout() {
   const getInitials = (name?: string) => {
     if (!name) return user?.email?.substring(0, 2).toUpperCase() || 'AD';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const updateProfilePicture = async (imageUrl: string) => {
+    try {
+      console.log('🖼️ Updating profile picture:', imageUrl);
+      
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+      
+      const response = await axios.patch(
+        `${API_URL}/auth/profile-picture`,
+        { pictureUrl: imageUrl },
+        { 
+          headers: { 
+            Authorization: `Bearer ${localStorage.getItem('token')}` 
+          } 
+        }
+      );
+      
+      if (response.data.success) {
+        // Update user in store
+        const updatedUser = response.data.user;
+        setAuth(updatedUser, localStorage.getItem('token'), null);
+        console.log('✅ Profile picture updated successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to update profile picture:', error);
+    }
   };
 
   return (
@@ -180,6 +212,10 @@ export default function DashboardLayout() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setUnsplashOpen(true)}>
+                    <Search className="mr-2 h-4 w-4" />
+                    <span>Change Picture</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
@@ -200,6 +236,12 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      <UnsplashPicker 
+        open={unsplashOpen}
+        onOpenChange={setUnsplashOpen}
+        onSelect={updateProfilePicture}
+      />
     </div>
   );
 }

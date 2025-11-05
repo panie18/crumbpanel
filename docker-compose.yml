@@ -17,6 +17,7 @@ services:
       - AUTH0_DOMAIN=your-auth0-domain.auth0.com
       - AUTH0_CLIENT_ID=your-auth0-client-id
       - AUTH0_CLIENT_SECRET=your-auth0-client-secret
+      - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY:-demo}
     volumes:
       - ./data:/app/data
       - ./data/backups:/app/backups
@@ -34,6 +35,7 @@ services:
       - VITE_AUTH0_DOMAIN=your-auth0-domain.auth0.com
       - VITE_AUTH0_CLIENT_ID=your-auth0-client-id
       - VITE_API_URL=http://localhost:5829/api
+      - VITE_UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY:-demo}
     restart: unless-stopped
     networks:
       - crumbpanel
