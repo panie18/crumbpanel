@@ -1,22 +1,56 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ServersService } from './servers.service';
 
 @Controller('servers')
+@UseGuards(AuthGuard('jwt'))
 export class ServersController {
   constructor(private serversService: ServersService) {}
 
   @Get()
-  getAll() {
+  async getAll() {
+    console.log('🎮 [SERVERS] Getting all servers...');
     return this.serversService.getAll();
   }
 
   @Post()
-  create(@Body() data: any) {
-    return this.serversService.create(data);
+  async create(@Body() data: any) {
+    console.log('🎮 [SERVERS] Creating server:', data);
+    try {
+      return await this.serversService.create(data);
+    } catch (error) {
+      console.error('❌ [SERVERS] Creation failed:', error);
+      throw error;
+    }
   }
 
   @Get(':id')
-  findById(@Param('id') id: string) {
+  async findById(@Param('id') id: string) {
+    console.log('🎮 [SERVERS] Getting server:', id);
     return this.serversService.findById(id);
+  }
+
+  @Post(':id/start')
+  async start(@Param('id') id: string) {
+    console.log('🎮 [SERVERS] Starting server:', id);
+    return this.serversService.startServer(id);
+  }
+
+  @Post(':id/stop')
+  async stop(@Param('id') id: string) {
+    console.log('🎮 [SERVERS] Stopping server:', id);
+    return this.serversService.stopServer(id);
+  }
+
+  @Post(':id/restart')
+  async restart(@Param('id') id: string) {
+    console.log('🎮 [SERVERS] Restarting server:', id);
+    return this.serversService.restartServer(id);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    console.log('🎮 [SERVERS] Deleting server:', id);
+    return this.serversService.deleteServer(id);
   }
 }

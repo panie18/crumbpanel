@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from './ui/select';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 interface CreateServerDialogProps {
   open: boolean;
@@ -25,7 +26,8 @@ interface CreateServerDialogProps {
 }
 
 const MINECRAFT_VERSIONS = [
-  { value: '1.21.4', label: '1.21.4 (Latest)' },
+  { value: '1.21.10', label: '1.21.10 (Latest)' },
+  { value: '1.21.4', label: '1.21.4' },
   { value: '1.21.3', label: '1.21.3' },
   { value: '1.21.2', label: '1.21.2' },
   { value: '1.21.1', label: '1.21.1' },
@@ -49,7 +51,7 @@ export default function CreateServerDialog({
 }: CreateServerDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
-    version: '1.21.4', // Updated to latest
+    version: '1.21.10', // Updated to latest
     port: 25565,
     rconPort: 25575,
     rconPassword: '',
@@ -59,14 +61,30 @@ export default function CreateServerDialog({
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data: typeof formData) => serversApi.create(data),
+    mutationFn: async (data: typeof formData) => {
+      console.log('🔨 [FRONTEND] Creating server:', data);
+      
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+      
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      
+      return axios.post(`${API_URL}/servers`, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    },
     onSuccess: () => {
+      console.log('✅ [FRONTEND] Server created successfully');
       toast.success('Server created successfully!');
       queryClient.invalidateQueries({ queryKey: ['servers'] });
       onOpenChange(false);
       setFormData({
         name: '',
-        version: '1.21.4',
+        version: '1.21.10',
         port: 25565,
         rconPort: 25575,
         rconPassword: '',
@@ -74,7 +92,9 @@ export default function CreateServerDialog({
       });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create server');
+      console.error('❌ [FRONTEND] Server creation failed:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create server';
+      toast.error(errorMessage);
     }
   });
 

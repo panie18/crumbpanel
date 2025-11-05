@@ -6,10 +6,46 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { loadSatoshiFont } from '@/components/ui/typography';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
+import { serversApi } from '@/lib/apis/servers';
+import { pluginsApi } from '@/lib/apis/plugins';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function PluginLibraryPage() {
   loadSatoshiFont();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedServer, setSelectedServer] = useState<string>('');
+
+  const { data: servers } = useQuery({
+    queryKey: ['servers'],
+    queryFn: () => serversApi.getAll(),
+  });
+
+  const installPluginMutation = useMutation({
+    mutationFn: ({ serverId, pluginId }: { serverId: string; pluginId: string }) => {
+      console.log('📦 [PLUGINS] Installing plugin:', pluginId, 'on server:', serverId);
+      return pluginsApi.install(serverId, pluginId);
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Plugin installed on server successfully!`);
+    },
+    onError: (error: any) => {
+      console.error('❌ [PLUGINS] Installation failed:', error);
+      toast.error(error.response?.data?.message || 'Failed to install plugin');
+    }
+  });
+
+  const handleInstallPlugin = (pluginId: number) => {
+    if (!selectedServer) {
+      toast.error('Please select a server first');
+      return;
+    }
+    installPluginMutation.mutate({ 
+      serverId: selectedServer, 
+      pluginId: pluginId.toString() 
+    });
+  };
 
   const popularPlugins = [
     {
@@ -133,7 +169,21 @@ export default function PluginLibraryPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Popular Plugins</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Popular Plugins</CardTitle>
+                <Select value={selectedServer} onValueChange={setSelectedServer}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Select server to install on" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servers?.data?.map((server: any) => (
+                      <SelectItem key={server.id} value={server.id}>
+                        {server.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -161,9 +211,14 @@ export default function PluginLibraryPage() {
                       </div>
                       
                       <div className="flex gap-2">
-                        <Button size="sm" className="flex-1">
+                        <Button 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleInstallPlugin(plugin.id)}
+                          disabled={installPluginMutation.isPending || !selectedServer}
+                        >
                           <Download className="w-4 h-4 mr-1" />
-                          Install
+                          {installPluginMutation.isPending ? 'Installing...' : 'Install'}
                         </Button>
                         <Button size="sm" variant="outline">
                           <Eye className="w-4 h-4" />
