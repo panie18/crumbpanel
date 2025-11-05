@@ -1,9 +1,12 @@
 import axios from 'axios';
 
+// Detect if running in Docker or localhost
 const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const API_URL = isLocalhost
+const API_URL = isLocalhost 
   ? (import.meta.env.VITE_API_URL || 'http://localhost:5829/api')
-  : '/api';
+  : '/api';  // Use nginx proxy in Docker
+
+console.log('🔗 API URL detected:', API_URL);
 
 export const api = axios.create({
   baseURL: API_URL,

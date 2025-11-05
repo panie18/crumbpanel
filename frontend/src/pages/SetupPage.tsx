@@ -13,7 +13,10 @@ import toast from 'react-hot-toast';
 import { Server, User, Mail, Lock, Palette, ArrowRight, ArrowLeft, Check, Eye, EyeOff } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 
-const API_URL = 'http://localhost:5829/api';
+// Fix API URL for Docker network
+const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5829/api'  // Development
+  : '/api';  // Production (nginx proxy)
 
 const PRESET_COLORS = [
 	{ name: 'Classic Black', primary: '#000000', accent: '#ffffff' },

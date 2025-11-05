@@ -14,7 +14,10 @@ import BackupsPage from './pages/BackupsPage';
 import FilesPage from './pages/FilesPage';
 import SettingsPage from './pages/SettingsPage';
 
-const API_URL = 'http://localhost:5829/api';
+// Fix API URL for Docker network
+const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5829/api'  // Development
+  : '/api';  // Production (nginx proxy)
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
