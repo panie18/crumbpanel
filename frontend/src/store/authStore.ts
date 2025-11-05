@@ -4,51 +4,25 @@ import { persist } from 'zustand/middleware';
 interface User {
   id: string;
   email: string;
-  name?: string;
-  picture?: string;
   role: string;
 }
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  token: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: User, accessToken: string, refreshToken?: string | null) => void;
+  login: (user: User, token: string) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
+      token: null,
       isAuthenticated: false,
-      setAuth: (user, accessToken, refreshToken = null) => {
-        // Store token in both localStorage locations for compatibility
-        localStorage.setItem('authToken', accessToken);
-        localStorage.setItem('token', accessToken);
-        
-        set({
-          user,
-          accessToken,
-          refreshToken,
-          isAuthenticated: true,
-        });
-      },
-      logout: () => {
-        // Clear all token storage
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('token');
-        
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        });
-      },
+      login: (user, token) => set({ user, token, isAuthenticated: true }),
+      logout: () => set({ user: null, token: null, isAuthenticated: false }),
     }),
     {
       name: 'auth-storage',
