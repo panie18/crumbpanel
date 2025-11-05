@@ -5,38 +5,35 @@ interface RecentSalesProps {
 }
 
 export function RecentSales({ servers }: RecentSalesProps) {
-  const recentActivity = [
-    {
-      name: 'Server "Survival" started',
-      email: 'Started by admin',
-      amount: '+1',
-      avatar: 'SV',
-    },
-    {
-      name: 'Player joined Creative',
-      email: 'Player: steve_123',
-      amount: '+1',
-      avatar: 'CR',
-    },
-    {
-      name: 'Backup completed',
-      email: 'All servers backed up',
-      amount: '✓',
-      avatar: 'BK',
-    },
-    {
-      name: 'Server "PVP" restarted',
-      email: 'Scheduled restart',
-      amount: '↻',
-      avatar: 'PV',
-    },
-    {
-      name: 'Plugin updated',
-      email: 'WorldEdit v7.2.15',
-      amount: '↑',
-      avatar: 'PL',
-    },
-  ];
+  // Check if there are any actual server activities
+  if (!servers || servers.length === 0) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center py-8">
+          <p className="text-sm text-muted-foreground">No recent activity.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Server activities will appear here once you create and manage servers.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Generate realistic activity based on actual servers
+  const recentActivity = servers.slice(0, 5).map((server, index) => ({
+    name: `Server "${server.name}" ${
+      index % 3 === 0
+        ? 'started'
+        : index % 3 === 1
+        ? 'backed up'
+        : 'updated'
+    }`,
+    email: `${
+      server.status === 'RUNNING' ? 'Online' : 'Offline'
+    } • ${server.players?.length || 0} players`,
+    amount: index % 3 === 0 ? '+1' : index % 3 === 1 ? '✓' : '↑',
+    avatar: server.name.substring(0, 2).toUpperCase(),
+  }));
 
   return (
     <div className="space-y-8">

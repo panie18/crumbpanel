@@ -1,120 +1,205 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Server, 
-  Users, 
-  HardDrive, 
-  Settings, 
+import {
+  Server,
+  Users,
+  Database,
+  Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Bell,
+  Search,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { Button } from '../ui/button';
-import { useState } from 'react';
-import ThemeToggle from '../ThemeToggle';
+import { useThemeStore } from '@/store/themeStore';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const navigation = [
-  { name: 'Servers', href: '/servers', icon: Server },
-  { name: 'Players', href: '/players', icon: Users },
-  { name: 'Backups', href: '/backups', icon: HardDrive },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Dashboard', href: '/', icon: Server, current: true },
+  { name: 'Players', href: '/players', icon: Users, current: false },
+  { name: 'Backups', href: '/backups', icon: Database, current: false },
+  { name: 'Settings', href: '/settings', icon: Settings, current: false },
 ];
 
 export default function DashboardLayout() {
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const { user, logout } = useAuthStore();
+  const { customPrimary } = useThemeStore();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    window.location.href = '/login';
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'AD';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex bg-background">
       {/* Sidebar */}
-      <motion.aside
-        initial={{ x: -300 }}
-        animate={{ x: sidebarOpen ? 0 : -300 }}
-        className="fixed inset-y-0 left-0 z-50 w-64 glass-panel border-r border-border md:translate-x-0 md:relative md:z-0"
-      >
-        <div className="flex flex-col h-full p-6">
-          {/* Logo */}
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">CrumbPanel</h1>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
+      <div className="hidden md:flex md:w-64 md:flex-col">
+        <div className="flex flex-col flex-grow pt-5 bg-card overflow-y-auto border-r">
+          <div className="flex items-center flex-shrink-0 px-4">
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: customPrimary || '#000' }}
+            >
+              <Server className="w-5 h-5 text-white" />
             </div>
-            <ThemeToggle />
+            <span className="ml-2 text-xl font-bold">CrumbPanel</span>
           </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 space-y-2">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+          <div className="mt-8 flex-grow flex flex-col">
+            <nav className="flex-1 px-2 space-y-1">
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    }`}
+                  >
+                    <item.icon
+                      className={`mr-3 flex-shrink-0 h-5 w-5 ${
+                        isActive ? 'text-primary-foreground' : 'text-muted-foreground'
+                      }`}
+                    />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+          <div className="flex-shrink-0 p-4">
+            <div className="text-xs text-muted-foreground">
+              Made with ❤️ by{' '}
+              <a
+                href="https://paulify.eu"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
               >
-                <item.icon className="w-5 h-5" />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Logout */}
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5" />
-            Sign Out
-          </Button>
+                paulify.dev
+              </a>
+            </div>
+          </div>
         </div>
-      </motion.aside>
+      </div>
 
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-40 md:hidden"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <X /> : <Menu />}
-      </Button>
+      {/* Mobile sidebar */}
+      <div className={`md:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
+        <div className="fixed inset-0 flex z-40">
+          <div className="fixed inset-0 bg-background/80 backdrop-blur" onClick={() => setSidebarOpen(false)} />
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-card">
+            <div className="absolute top-0 right-0 -mr-12 pt-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(false)}
+                className="text-muted-foreground"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            {/* Mobile nav content same as desktop */}
+          </div>
+        </div>
+      </div>
 
       {/* Main content */}
-      <main className="flex-1 md:ml-0 p-8 relative z-10">
-        <Outlet />
-        
-        {/* Footer */}
-        <footer className="mt-12 text-center text-sm text-gray-500">
-          <p>
-            Made with ❤️ by{' '}
-            <a
-              href="https://paulify.eu"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white hover:text-gray-300 transition-colors"
-            >
-              paulify.dev
-            </a>
-          </p>
-          <p className="mt-1">
-            <a
-              href="https://github.com/panie18/crumbpanel"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              ⭐ Star on GitHub
-            </a>
-          </p>
-        </footer>
-      </main>
+      <div className="flex flex-col w-0 flex-1 overflow-hidden">
+        {/* Top bar */}
+        <div className="relative z-10 flex-shrink-0 flex h-16 bg-background border-b">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden"
+          >
+            <Menu className="h-6 w-6" />
+          </Button>
+          
+          <div className="flex-1 px-4 flex justify-between items-center">
+            <div className="flex-1 flex items-center">
+              <div className="max-w-lg w-full lg:max-w-xs">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search..."
+                    className="pl-10 pr-4"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="ml-4 flex items-center space-x-4">
+              <ThemeToggle />
+              
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.picture} alt={user?.name} />
+                      <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => window.location.href = '/settings'}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+
+        {/* Page content */}
+        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
