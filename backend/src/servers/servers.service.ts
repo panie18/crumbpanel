@@ -306,16 +306,25 @@ texturepack-required=false
       const output = data.toString();
       this.addLog(id, output);
       
+      console.log(`[${server.name}] ${output.trim()}`); // Also log to backend console
+      
       // Check if server is ready
-      if (output.includes('Done (') || output.includes('Server started')) {
+      if (output.includes('Done (') || output.includes('For help, type "help"')) {
         this.serverRepository.update(id, { status: 'RUNNING' });
         console.log(`✅ [SERVERS] Server ${server.name} is now running`);
+        this.addLog(id, '[SUCCESS] Server is now running and ready for players!');
+      }
+      
+      // Check for errors
+      if (output.includes('[ERROR]') || output.includes('Exception')) {
+        console.error(`❌ [SERVERS] Error in ${server.name}: ${output}`);
       }
     });
 
     process.stderr?.on('data', (data) => {
       const error = data.toString();
       this.addLog(id, `[ERROR] ${error}`);
+      console.error(`[${server.name}] ERROR: ${error.trim()}`);
     });
 
     // Handle process exit
