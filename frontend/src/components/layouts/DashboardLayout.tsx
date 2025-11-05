@@ -12,6 +12,7 @@ import {
   Bell,
   Search,
   ChevronDown,
+  Package,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -32,8 +33,10 @@ import axios from 'axios';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Server, current: true },
+  { name: 'Servers', href: '/servers', icon: Server, current: false },
   { name: 'Players', href: '/players', icon: Users, current: false },
   { name: 'Backups', href: '/backups', icon: Database, current: false },
+  { name: 'Plugins', href: '/plugins', icon: Package, current: false },
   { name: 'Settings', href: '/settings', icon: Settings, current: false },
 ];
 

@@ -13,6 +13,7 @@ import PlayersPage from './pages/PlayersPage';
 import BackupsPage from './pages/BackupsPage';
 import FilesPage from './pages/FilesPage';
 import SettingsPage from './pages/SettingsPage';
+import PluginLibraryPage from './pages/PluginLibraryPage';
 
 // Fix API URL for Docker network
 const API_URL = window.location.hostname === 'localhost' 
@@ -97,6 +98,7 @@ function AppWrapper() {
         <Route path="servers/:id" element={<ServerDetailPage />} />
         <Route path="players" element={<PlayersPage />} />
         <Route path="backups" element={<BackupsPage />} />
+        <Route path="plugins" element={<PluginLibraryPage />} />
         <Route path="files/:serverId" element={<FilesPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

@@ -25,7 +25,8 @@ interface CreateServerDialogProps {
 }
 
 const MINECRAFT_VERSIONS = [
-  { value: '1.21.3', label: '1.21.3 (Latest)' },
+  { value: '1.21.4', label: '1.21.4 (Latest)' },
+  { value: '1.21.3', label: '1.21.3' },
   { value: '1.21.2', label: '1.21.2' },
   { value: '1.21.1', label: '1.21.1' },
   { value: '1.21', label: '1.21' },
@@ -48,7 +49,7 @@ export default function CreateServerDialog({
 }: CreateServerDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
-    version: '1.21.3',
+    version: '1.21.4', // Updated to latest
     port: 25565,
     rconPort: 25575,
     rconPassword: '',
@@ -65,7 +66,7 @@ export default function CreateServerDialog({
       onOpenChange(false);
       setFormData({
         name: '',
-        version: '1.21.3',
+        version: '1.21.4',
         port: 25565,
         rconPort: 25575,
         rconPassword: '',
