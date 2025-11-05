@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { User } from '../entities/user.entity';
 import { TotpService } from './totp.service';
+import { Fido2Service } from './fido2.service';
 
 @Controller('auth')
 export class AuthController {
@@ -13,6 +14,7 @@ export class AuthController {
     private authService: AuthService,
     private jwtService: JwtService,
     private totpService: TotpService,
+    private fido2Service: Fido2Service,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
@@ -203,6 +205,62 @@ export class AuthController {
     } catch (error) {
       console.error('❌ [TOTP] Disable failed:', error);
       throw new Error(error.message || 'Failed to disable TOTP');
+    }
+  }
+
+  @Post('fido2/challenge')
+  async createFido2Challenge(@Body() { email }: { email: string }) {
+    try {
+      console.log('🔐 [FIDO2] Creating challenge for:', email);
+      
+      const user = await this.userRepository.findOne({ where: { email } });
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get user's registered credentials (mock data for now)
+      const allowCredentials = []; // In real implementation, fetch from database
+      
+      const options = await this.fido2Service.generateCredentialRequestOptions(email, allowCredentials);
+      
+      return options;
+    } catch (error) {
+      console.error('❌ [FIDO2] Challenge creation failed:', error);
+      throw new Error('Failed to create FIDO2 challenge');
+    }
+  }
+
+  @Post('fido2/verify')
+  async verifyFido2(@Body() data: any) {
+    try {
+      console.log('🔐 [FIDO2] Verifying authentication for:', data.email);
+      
+      const user = await this.userRepository.findOne({ where: { email: data.email } });
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const isValid = this.fido2Service.verifyAuthenticatorAssertion(data);
+      
+      if (isValid) {
+        const payload = { sub: user.id, email: user.email, role: user.role };
+        const accessToken = this.jwtService.sign(payload);
+
+        return {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          },
+          accessToken,
+        };
+      } else {
+        throw new Error('FIDO2 verification failed');
+      }
+    } catch (error) {
+      console.error('❌ [FIDO2] Verification failed:', error);
+      throw new Error('FIDO2 authentication failed');
     }
   }
 }

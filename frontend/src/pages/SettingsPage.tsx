@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Shield, Database, Bell, Palette, Globe, Key } from 'lucide-react';
+import { Save, Shield, Database, Bell, Palette, Globe, Key, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -115,30 +115,44 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  Authentication Settings
+                  Two-Factor Authentication
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch id="two-factor" />
-                  <Label htmlFor="two-factor">Enable Two-Factor Authentication</Label>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>TOTP (Authenticator App)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Use Google Authenticator, Authy, or similar apps
+                    </p>
+                  </div>
+                  <Button variant="outline">
+                    Setup TOTP
+                  </Button>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Switch id="session-timeout" defaultChecked />
-                  <Label htmlFor="session-timeout">Automatic Session Timeout (30 minutes)</Label>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>FIDO2/WebAuthn</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Hardware keys, fingerprint, or face recognition
+                    </p>
+                  </div>
+                  <Button variant="outline">
+                    Add Passkey
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>Maximum Login Attempts</Label>
-                  <Select defaultValue="5">
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="3">3 attempts</SelectItem>
-                      <SelectItem value="5">5 attempts</SelectItem>
-                      <SelectItem value="10">10 attempts</SelectItem>
-                    </SelectContent>
-                  </Select>
+                
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100">Enhanced Security</h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        Enable 2FA to significantly improve your account security. We recommend using both TOTP and FIDO2 for maximum protection.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -240,49 +254,127 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Server Status Changes</Label>
-                    <p className="text-sm text-muted-foreground">Get notified when servers start or stop</p>
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  SMTP Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-host">SMTP Host</Label>
+                    <Input
+                      id="smtp-host"
+                      placeholder="smtp.gmail.com"
+                      defaultValue="smtp.gmail.com"
+                    />
                   </div>
-                  <Switch defaultChecked />
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-port">SMTP Port</Label>
+                    <Select defaultValue="587">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25 (Unencrypted)</SelectItem>
+                        <SelectItem value="587">587 (STARTTLS)</SelectItem>
+                        <SelectItem value="465">465 (SSL/TLS)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Player Join/Leave</Label>
-                    <p className="text-sm text-muted-foreground">Notifications for player activity</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-username">Username</Label>
+                    <Input
+                      id="smtp-username"
+                      placeholder="your-email@gmail.com"
+                      type="email"
+                    />
                   </div>
-                  <Switch />
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp-password">Password</Label>
+                    <Input
+                      id="smtp-password"
+                      placeholder="App password or regular password"
+                      type="password"
+                    />
+                  </div>
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>System Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Important system notifications</p>
-                  </div>
-                  <Switch defaultChecked />
+                <div className="space-y-2">
+                  <Label htmlFor="smtp-from">From Address</Label>
+                  <Input
+                    id="smtp-from"
+                    placeholder="CrumbPanel <noreply@yourserver.com>"
+                    defaultValue="CrumbPanel <noreply@crumbpanel.local>"
+                  />
                 </div>
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Backup Completion</Label>
-                    <p className="text-sm text-muted-foreground">When automatic backups finish</p>
-                  </div>
-                  <Switch defaultChecked />
+                <div className="flex items-center space-x-2">
+                  <Switch id="smtp-encryption" defaultChecked />
+                  <Label htmlFor="smtp-encryption">Use TLS/SSL Encryption</Label>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                
+                <div className="flex gap-2">
+                  <Button variant="outline">
+                    Test SMTP Connection
+                  </Button>
+                  <Button>
+                    Save SMTP Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Notification Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Server Status Changes</Label>
+                      <p className="text-sm text-muted-foreground">Get notified when servers start or stop</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Player Join/Leave</Label>
+                      <p className="text-sm text-muted-foreground">Notifications for player activity</p>
+                    </div>
+                    <Switch />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>System Alerts</Label>
+                      <p className="text-sm text-muted-foreground">Important system notifications</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Backup Completion</Label>
+                      <p className="text-sm text-muted-foreground">When automatic backups finish</p>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="backup" className="space-y-4">

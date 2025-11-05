@@ -25,7 +25,35 @@ interface CreateServerDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Latest Minecraft versions (researched December 2024)
+// Updated Minecraft versions based on your research
+const MINECRAFT_VERSIONS = [
+  // Latest Releases (2025)
+  { value: '1.21.8', label: '1.21.8 (Latest Release)', type: 'latest', date: '17 Jul 2025' },
+  { value: '1.21.7', label: '1.21.7', type: 'latest', date: '30 Jun 2025' },
+  { value: '1.21.6', label: '1.21.6', type: 'latest', date: '17 Jun 2025' },
+  { value: '1.21.5', label: '1.21.5', type: 'latest', date: '25 Mar 2025' },
+  
+  // Current Releases (2024)
+  { value: '1.21.4', label: '1.21.4 (Stable)', type: 'stable', date: '3 Dec 2024' },
+  { value: '1.21.3', label: '1.21.3', type: 'stable', date: '23 Oct 2024' },
+  { value: '1.21.2', label: '1.21.2', type: 'stable', date: '22 Oct 2024' },
+  { value: '1.21.1', label: '1.21.1', type: 'stable', date: '8 Aug 2024' },
+  { value: '1.21', label: '1.21 (Tricky Trials)', type: 'stable', date: '13 Jun 2024' },
+  
+  // Popular Legacy Versions
+  { value: '1.20.6', label: '1.20.6', type: 'legacy' },
+  { value: '1.20.4', label: '1.20.4 (Popular)', type: 'popular' },
+  { value: '1.20.1', label: '1.20.1 (Popular)', type: 'popular' },
+  { value: '1.19.4', label: '1.19.4', type: 'legacy' },
+  { value: '1.19.2', label: '1.19.2 (Popular)', type: 'popular' },
+  { value: '1.18.2', label: '1.18.2', type: 'legacy' },
+  { value: '1.17.1', label: '1.17.1', type: 'legacy' },
+  { value: '1.16.5', label: '1.16.5 (Popular)', type: 'popular' },
+  { value: '1.12.2', label: '1.12.2 (Modded)', type: 'modded' },
+  { value: '1.8.9', label: '1.8.9 (PvP)', type: 'pvp' },
+  { value: '1.7.10', label: '1.7.10 (Legacy)', type: 'legacy' },
+];
+
 const BEDROCK_VERSIONS = [
   { value: '1.21.44', label: '1.21.44 (Latest Bedrock)', type: 'bedrock' },
   { value: '1.21.43', label: '1.21.43', type: 'bedrock' },
@@ -37,38 +65,17 @@ const BEDROCK_VERSIONS = [
   { value: '1.21.22', label: '1.21.22', type: 'bedrock' },
   { value: '1.21.21', label: '1.21.21', type: 'bedrock' },
   { value: '1.21.20', label: '1.21.20', type: 'bedrock' },
-  { value: '1.20.81', label: '1.20.81', type: 'bedrock' },
-  { value: '1.20.80', label: '1.20.80', type: 'bedrock' },
-  { value: '1.19.83', label: '1.19.83', type: 'bedrock' },
-];
-
-const JAVA_VERSIONS = [
-  { value: '1.21.4', label: '1.21.4 (Latest Java)', type: 'java' },
-  { value: '1.21.3', label: '1.21.3', type: 'java' },
-  { value: '1.21.1', label: '1.21.1', type: 'java' },
-  { value: '1.21', label: '1.21', type: 'java' },
-  { value: '1.20.6', label: '1.20.6', type: 'java' },
-  { value: '1.20.4', label: '1.20.4 (Popular)', type: 'java' },
-  { value: '1.20.2', label: '1.20.2', type: 'java' },
-  { value: '1.20.1', label: '1.20.1 (Popular)', type: 'java' },
-  { value: '1.19.4', label: '1.19.4', type: 'java' },
-  { value: '1.19.2', label: '1.19.2 (Popular)', type: 'java' },
-  { value: '1.18.2', label: '1.18.2', type: 'java' },
-  { value: '1.17.1', label: '1.17.1', type: 'java' },
-  { value: '1.16.5', label: '1.16.5 (Popular)', type: 'java' },
-  { value: '1.12.2', label: '1.12.2 (Modded)', type: 'java' },
-  { value: '1.8.9', label: '1.8.9 (PvP)', type: 'java' },
-  { value: '1.7.10', label: '1.7.10 (Legacy)', type: 'java' },
 ];
 
 const getVersionBadgeColor = (type: string) => {
   switch (type) {
-    case 'release': return 'bg-green-500 text-white';
-    case 'java': return 'bg-blue-500 text-white';
+    case 'latest': return 'bg-green-600 text-white';
+    case 'stable': return 'bg-blue-500 text-white';
     case 'popular': return 'bg-purple-500 text-white';
     case 'modded': return 'bg-orange-500 text-white';
     case 'pvp': return 'bg-red-500 text-white';
     case 'legacy': return 'bg-gray-500 text-white';
+    case 'bedrock': return 'bg-cyan-500 text-white';
     default: return 'bg-gray-400 text-white';
   }
 };
@@ -80,7 +87,7 @@ export default function CreateServerDialog({
   const [formData, setFormData] = useState({
     name: '',
     serverType: 'java', // 'java' or 'bedrock'
-    version: '1.21.4',
+    version: '1.21.8', // Latest version
     port: 25565,
     rconPort: 25575,
     rconPassword: '',
@@ -122,7 +129,7 @@ export default function CreateServerDialog({
       setFormData({
         name: '',
         serverType: 'java',
-        version: '1.21.4',
+        version: '1.21.8',
         port: 25565,
         rconPort: 25575,
         rconPassword: '',
@@ -162,14 +169,14 @@ export default function CreateServerDialog({
   };
 
   const getAvailableVersions = () => {
-    return formData.serverType === 'bedrock' ? BEDROCK_VERSIONS : JAVA_VERSIONS;
+    return formData.serverType === 'bedrock' ? BEDROCK_VERSIONS : MINECRAFT_VERSIONS;
   };
 
   const handleServerTypeChange = (type: string) => {
     setFormData({
       ...formData,
       serverType: type,
-      version: type === 'bedrock' ? '1.21.44' : '1.21.4',
+      version: type === 'bedrock' ? '1.21.44' : '1.21.8',
       port: type === 'bedrock' ? 19132 : 25565, // Bedrock uses different default port
     });
   };
@@ -245,15 +252,16 @@ export default function CreateServerDialog({
               <SelectContent className="max-h-60">
                 {getAvailableVersions().map((version) => (
                   <SelectItem key={version.value} value={version.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{version.label}</span>
-                      <span className={`px-1.5 py-0.5 text-xs rounded ${
-                        version.type === 'bedrock' ? 'bg-blue-500 text-white' :
-                        version.type === 'java' ? 'bg-orange-500 text-white' :
-                        'bg-gray-400 text-white'
-                      }`}>
+                    <div className="flex items-center gap-2 w-full">
+                      <span className="flex-1">{version.label}</span>
+                      <span className={`px-2 py-0.5 text-xs rounded-full ${getVersionBadgeColor(version.type)}`}>
                         {version.type}
                       </span>
+                      {version.date && (
+                        <span className="text-xs text-muted-foreground">
+                          {version.date}
+                        </span>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
@@ -261,8 +269,8 @@ export default function CreateServerDialog({
             </Select>
             <p className="text-xs text-muted-foreground">
               {formData.serverType === 'bedrock' 
-                ? 'Bedrock versions are updated more frequently'
-                : 'Java versions include stable releases and popular modding versions'
+                ? 'Bedrock versions support cross-platform play'
+                : 'Latest: 1.21.8 (July 2025) - includes all Tricky Trials updates'
               }
             </p>
           </div>

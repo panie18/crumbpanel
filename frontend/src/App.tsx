@@ -14,6 +14,7 @@ import BackupsPage from './pages/BackupsPage';
 import FilesPage from './pages/FilesPage';
 import SettingsPage from './pages/SettingsPage';
 import PluginLibraryPage from './pages/PluginLibraryPage';
+import { Button } from './components/ui/button';
 
 // Fix API URL for Docker network
 const API_URL = window.location.hostname === 'localhost' 
@@ -28,26 +29,30 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function AppWrapper() {
   const navigate = useNavigate();
   const { theme, customPrimary, customAccent } = useThemeStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, logout } = useAuthStore();
 
   // Check setup status on app load
-  const { data: setupStatus, isLoading } = useQuery({
+  const { data: setupStatus, isLoading: isCheckingSetup, error } = useQuery({
     queryKey: ['setup-status'],
     queryFn: async () => {
       try {
+        console.log('🔍 [APP] Checking setup status...');
         const response = await axios.get(`${API_URL}/auth/setup-status`);
+        console.log('✅ [APP] Setup status received:', response.data);
         return response.data;
       } catch (error) {
+        console.error('❌ [APP] Setup status check failed:', error);
         return { needsSetup: true };
       }
     },
     retry: 1,
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false, // Prevent infinite refetch loops
   });
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     
-    // Apply custom colors system-wide with proper CSS variables
     if (customPrimary) {
       // Convert hex to HSL for CSS variables
       const primaryHsl = hexToHsl(customPrimary);
@@ -62,20 +67,45 @@ function AppWrapper() {
   }, [theme, customPrimary, customAccent]);
 
   useEffect(() => {
-    // Redirect to setup if needed
-    if (!isLoading && setupStatus?.needsSetup) {
-      console.log('🔄 Redirecting to setup page');
-      navigate('/setup', { replace: true });
-    } else if (!isLoading && setupStatus?.isSetupComplete && !isAuthenticated) {
-      console.log('🔄 Redirecting to login page');
-      navigate('/login', { replace: true });
-    }
-  }, [setupStatus, isLoading, navigate, isAuthenticated]);
+    console.log('🔄 [APP] Navigation effect triggered:', {
+      isCheckingSetup,
+      setupStatus,
+      isAuthenticated,
+      pathname: window.location.pathname
+    });
 
-  if (isLoading) {
+    if (isCheckingSetup) return; // Wait for setup check
+
+    if (setupStatus?.needsSetup && window.location.pathname !== '/setup') {
+      console.log('🔄 [APP] Redirecting to setup page');
+      navigate('/setup', { replace: true });
+    } else if (setupStatus?.isSetupComplete && !isAuthenticated && window.location.pathname !== '/login') {
+      console.log('🔄 [APP] Redirecting to login page');
+      navigate('/login', { replace: true });
+    } else if (isAuthenticated && ['/login', '/setup'].includes(window.location.pathname)) {
+      console.log('🔄 [APP] Redirecting authenticated user to dashboard');
+      navigate('/', { replace: true });
+    }
+  }, [setupStatus, isCheckingSetup, isAuthenticated, navigate]);
+
+  if (isCheckingSetup) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Initializing CrumbPanel...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">Failed to connect to backend</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
       </div>
     );
   }
