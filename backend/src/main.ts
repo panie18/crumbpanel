@@ -35,11 +35,22 @@ async function bootstrap() {
 
   try {
     const app = await NestFactory.create(AppModule, {
-      cors: true,
+      cors: {
+        origin: ['http://localhost:8437', 'http://localhost:3000'], 
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+      },
       logger: ['log', 'error', 'warn', 'debug', 'verbose'],
     });
 
-    app.enableCors({ origin: '*', credentials: true });
+    app.enableCors({
+      origin: ['http://localhost:8437', 'http://localhost:3000'], 
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+    
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     app.setGlobalPrefix('api');
 
@@ -53,6 +64,7 @@ async function bootstrap() {
 ║  🌐 http://0.0.0.0:${port}                             ║
 ║  📡 API: http://localhost:${port}/api                  ║
 ║  💾 Database: SQLite ./data/crumbpanel.db              ║
+║  🔐 JWT Auth: ENABLED                                  ║
 ╚════════════════════════════════════════════════════════╝
     `);
     

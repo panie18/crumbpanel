@@ -8,14 +8,37 @@ const API_URL = isLocalhost
 
 console.log('🔗 API URL detected:', API_URL);
 
-// Add auth token to all requests
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Enhanced auth interceptor
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔐 Adding auth token to request:', config.url);
+    } else {
+      console.warn('⚠️ No auth token found for request:', config.url);
+    }
+    return config;
+  },
+  (error) => {
+    console.error('❌ Request interceptor error:', error);
+    return Promise.reject(error);
   }
-  return config;
-});
+);
+
+// Response interceptor for unauthorized errors
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('🚫 Unauthorized - clearing tokens and redirecting to login');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const serversApi = {
   getAll: () => axios.get(`${API_URL}/servers`),

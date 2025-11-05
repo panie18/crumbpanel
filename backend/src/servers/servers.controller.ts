@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ServersService } from './servers.service';
 
@@ -14,10 +14,28 @@ export class ServersController {
   }
 
   @Post()
-  async create(@Body() data: any) {
-    console.log('🎮 [SERVERS] Creating server:', data);
+  async create(@Body() data: any, @Req() req: any) {
+    console.log('🎮 [SERVERS] Creating server for user:', req.user?.email);
+    console.log('🎮 [SERVERS] Server data:', data);
+    
     try {
-      return await this.serversService.create(data);
+      // Validate required fields
+      if (!data.name?.trim()) {
+        throw new Error('Server name is required');
+      }
+      
+      if (!data.version) {
+        throw new Error('Minecraft version is required');
+      }
+      
+      if (!data.rconPassword?.trim()) {
+        throw new Error('RCON password is required');
+      }
+      
+      const result = await this.serversService.create(data);
+      console.log('✅ [SERVERS] Server created successfully:', result.id);
+      
+      return result;
     } catch (error) {
       console.error('❌ [SERVERS] Creation failed:', error);
       throw error;

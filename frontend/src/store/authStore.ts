@@ -20,12 +20,16 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
       setAuth: (user, accessToken, refreshToken = null) => {
+        // Store token in both localStorage locations for compatibility
+        localStorage.setItem('authToken', accessToken);
+        localStorage.setItem('token', accessToken);
+        
         set({
           user,
           accessToken,
@@ -34,6 +38,10 @@ export const useAuthStore = create<AuthState>()(
         });
       },
       logout: () => {
+        // Clear all token storage
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
+        
         set({
           user: null,
           accessToken: null,
