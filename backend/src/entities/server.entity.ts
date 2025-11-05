@@ -1,8 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Player } from './player.entity';
-import { Backup } from './backup.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('minecraft_servers')
+@Entity('servers')
 export class Server {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -13,11 +11,17 @@ export class Server {
   @Column()
   version: string;
 
-  @Column({ default: 'vanilla' })
-  serverType: string; // 'vanilla', 'paper', 'fabric'
+  @Column({ default: 'java' })
+  serverType: string; // 'java' or 'bedrock'
 
   @Column()
   port: number;
+
+  @Column({ nullable: true })
+  rconPort: number;
+
+  @Column({ nullable: true })
+  rconPassword: string;
 
   @Column()
   maxRam: number;
@@ -28,7 +32,7 @@ export class Server {
   @Column({ default: 'STOPPED' })
   status: string; // 'STOPPED', 'STARTING', 'RUNNING', 'STOPPING', 'ERROR', 'INSTALLING'
 
-  @Column()
+  @Column({ nullable: true })
   serverPath: string;
 
   @CreateDateColumn()
@@ -36,10 +40,4 @@ export class Server {
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @OneToMany(() => Player, player => player.server)
-  players: Player[];
-
-  @OneToMany(() => Backup, backup => backup.server)
-  backups: Backup[];
 }
