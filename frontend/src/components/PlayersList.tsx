@@ -85,7 +85,7 @@ export default function PlayersList({ serverId }: PlayersListProps) {
                     <Button
                       variant="outline" // Changed from "glass"
                       size="sm"
-                      onClick={() => kickMutation.mutate(player.uuid)}
+                      onClick={() => kickPlayerMutation.mutate(player.uuid)}
                     >
                       <UserX className="w-4 h-4" />
                     </Button>
