@@ -1,31 +1,23 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Upload, Download, Trash2, FolderPlus, File, Folder } from 'lucide-react';
 import { filesApi, serversApi } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  ArrowLeft,
-  Folder,
-  File,
-  Trash2,
-  Edit,
-  Save,
-} from 'lucide-react';
-import { formatBytes, formatDate } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { loadSatoshiFont } from '@/components/ui/typography';
 import toast from 'react-hot-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 export default function FilesPage() {
+  loadSatoshiFont();
   const { serverId } = useParams<{ serverId: string }>();
   const [currentPath, setCurrentPath] = useState('/');
-  const [editingFile, setEditingFile] = useState<any>(null);
-  const [fileContent, setFileContent] = useState('');
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [folderDialogOpen, setFolderDialogOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
   const queryClient = useQueryClient();
 
   const { data: serverResponse, isLoading: serverLoading } = useQuery({
@@ -40,46 +32,77 @@ export default function FilesPage() {
     enabled: !!serverId,
   });
 
-  const readFileMutation = useMutation({
-    mutationFn: (path: string) => filesApi.read(serverId!, path),
-    onSuccess: (data, path) => {
-      setFileContent(data.data.content);
-      setEditingFile({ path, name: path.split('/').pop() });
-    },
-  });
-
-  const saveFileMutation = useMutation({
-    mutationFn: (data: { path: string; content: string }) =>
-      filesApi.write(serverId!, data.path, data.content),
+  const uploadMutation = useMutation({
+    mutationFn: ({ file, path }: { file: File; path?: string }) =>
+      filesApi.uploadFile(serverId!, file, path),
     onSuccess: () => {
-      toast.success('File saved');
-      setEditingFile(null);
-      queryClient.invalidateQueries({ queryKey: ['files', serverId] });
+      toast.success('File uploaded successfully');
+      queryClient.invalidateQueries({ queryKey: ['files', serverId, currentPath] });
+      setUploadDialogOpen(false);
     },
-    onError: () => toast.error('Error saving file'),
+    onError: () => toast.error('Failed to upload file'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (path: string) => filesApi.delete(serverId!, path),
+    mutationFn: (filePath: string) => filesApi.deleteFile(serverId!, filePath),
     onSuccess: () => {
-      toast.success('Deleted');
-      queryClient.invalidateQueries({ queryKey: ['files', serverId] });
+      toast.success('File deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['files', serverId, currentPath] });
     },
-    onError: () => toast.error('Error deleting'),
+    onError: () => toast.error('Failed to delete file'),
   });
 
-  const handleFileClick = (file: any) => {
-    if (file.isDirectory) {
-      setCurrentPath(file.path);
-    } else if (file.name.endsWith('.properties') || file.name.endsWith('.yml') || file.name.endsWith('.json') || file.name.endsWith('.txt')) {
-      readFileMutation.mutate(file.path);
+  const createFolderMutation = useMutation({
+    mutationFn: (folderPath: string) => filesApi.createFolder(serverId!, folderPath),
+    onSuccess: () => {
+      toast.success('Folder created successfully');
+      queryClient.invalidateQueries({ queryKey: ['files', serverId, currentPath] });
+      setFolderDialogOpen(false);
+      setNewFolderName('');
+    },
+    onError: () => toast.error('Failed to create folder'),
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadMutation.mutate({ file, path: currentPath });
     }
   };
 
-  const handleBack = () => {
+  const handleDownload = async (filePath: string) => {
+    try {
+      const response = await filesApi.downloadFile(serverId!, filePath);
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filePath.split('/').pop() || 'download';
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error('Failed to download file');
+    }
+  };
+
+  const handleCreateFolder = () => {
+    if (!newFolderName.trim()) {
+      toast.error('Please enter a folder name');
+      return;
+    }
+    const folderPath = currentPath === '/' ? `/${newFolderName}` : `${currentPath}/${newFolderName}`;
+    createFolderMutation.mutate(folderPath);
+  };
+
+  const navigateToPath = (path: string) => {
+    setCurrentPath(path);
+  };
+
+  const getParentPath = () => {
+    if (currentPath === '/') return '/';
     const parts = currentPath.split('/').filter(Boolean);
     parts.pop();
-    setCurrentPath(parts.join('/'));
+    return parts.length === 0 ? '/' : `/${parts.join('/')}`;
   };
 
   if (serverLoading || filesLoading) {
@@ -93,37 +116,88 @@ export default function FilesPage() {
   const server = serverResponse?.data;
   const files = filesResponse?.data || [];
 
-  return (
-    <div className="space-y-6">
-      <div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <Button variant="ghost" onClick={() => navigate('/servers')} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
+  if (!server) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-muted-foreground">Server not found</p>
+      </div>
+    );
+  }
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold gradient-text">
-              File Management
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              {server?.data?.name}
-            </p>
-          </div>
+  return (
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">File Manager</h2>
+          <p className="text-muted-foreground">Server: {server.name}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Upload className="w-4 h-4 mr-2" />
+                Upload File
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload File</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="file-upload">Select File</Label>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileUpload}
+                    disabled={uploadMutation.isPending}
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Upload to: {currentPath}
+                </p>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FolderPlus className="w-4 h-4 mr-2" />
+                New Folder
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Folder</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="folder-name">Folder Name</Label>
+                  <Input
+                    id="folder-name"
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Enter folder name"
+                  />
+                </div>
+                <Button onClick={handleCreateFolder} disabled={createFolderMutation.isPending}>
+                  {createFolderMutation.isPending ? 'Creating...' : 'Create Folder'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="font-mono text-sm">
-              /{currentPath || 'root'}
+            <CardTitle className="flex items-center gap-2">
+              Current Path: {currentPath}
             </CardTitle>
-            {currentPath && (
-              <Button variant="ghost" size="sm" onClick={handleBack}>
+            {currentPath !== '/' && (
+              <Button variant="outline" size="sm" onClick={() => navigateToPath(getParentPath())}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
@@ -132,87 +206,63 @@ export default function FilesPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {files?.data?.length === 0 ? (
+            {files.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                Folder is empty
+                No files in this directory
               </p>
             ) : (
-              files?.data?.map((file: any) => (
+              files.map((file: any, index: number) => (
                 <div
-                  key={file.path}
-                  className="glass-panel p-4 flex items-center justify-between cursor-pointer hover:bg-white/10 transition-colors"
-                  onClick={() => handleFileClick(file)}
+                  key={index}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent"
                 >
                   <div className="flex items-center gap-3">
-                    {file.isDirectory ? (
-                      <Folder className="w-5 h-5 text-cyan-400" />
+                    {file.type === 'directory' ? (
+                      <Folder className="w-5 h-5 text-blue-500" />
                     ) : (
-                      <File className="w-5 h-5 text-purple-400" />
+                      <File className="w-5 h-5 text-muted-foreground" />
                     )}
                     <div>
-                      <p className="font-semibold">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {!file.isDirectory && formatBytes(file.size)} · {formatDate(file.modified)}
+                      <p className="font-medium">{file.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {file.size && `${file.size} bytes`} • {file.modified}
                       </p>
                     </div>
                   </div>
-
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                    {!file.isDirectory && (
+                  <div className="flex items-center gap-2">
+                    {file.type === 'directory' ? (
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => readFileMutation.mutate(file.path)}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigateToPath(`${currentPath}/${file.name}`.replace('//', '/'))}
                       >
-                        <Edit className="w-4 h-4" />
+                        Open
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(`${currentPath}/${file.name}`.replace('//', '/'))}
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Download
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        if (confirm('Really delete?')) {
-                          deleteMutation.mutate(file.path);
-                        }
-                      }}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteMutation.mutate(`${currentPath}/${file.name}`.replace('//', '/'))}
+                      disabled={deleteMutation.isPending}
                     >
-                      <Trash2 className="w-4 h-4 text-red-400" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               ))
-            }
+            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* File Editor Dialog */}
-      <Dialog open={!!editingFile} onOpenChange={() => setEditingFile(null)}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>{editingFile?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <textarea
-              value={fileContent}
-              onChange={(e) => setFileContent(e.target.value)}
-              className="w-full h-96 font-mono text-sm glass-panel p-4 rounded-lg resize-none"
-            />
-            <Button
-              onClick={() =>
-                saveFileMutation.mutate({
-                  path: editingFile?.path,
-                  content: fileContent,
-                })
-              }
-              disabled={saveFileMutation.isPending}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              Save
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
