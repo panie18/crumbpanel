@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
+import ThemeToggle from '@/components/ThemeToggle';
 import toast from 'react-hot-toast';
 import { Server, Eye, EyeOff, Loader2, LogIn, Shield } from 'lucide-react';
 
@@ -96,7 +98,7 @@ export default function LoginPage() {
     onError: (error: any) => {
       console.error('❌ [LOGIN] Failed:', error);
       if (error.message === '2FA_REQUIRED') {
-        toast.info('Please enter your 2FA code');
+        toast('Please enter your 2FA code', { icon: 'ℹ️' });
       } else {
         toast.error(error.response?.data?.message || 'Login failed');
       }
@@ -137,15 +139,15 @@ export default function LoginPage() {
           timeout: 60000,
           userVerification: 'required'
         }
-      });
+      }) as PublicKeyCredential;
 
-      if (credential) {
+      if (credential && credential.rawId) {
         // Send credential to server for verification
         const loginResponse = await axios.post(`${API_URL}/auth/fido2/verify`, {
           email,
           credentialId: Array.from(new Uint8Array(credential.rawId)),
-          authenticatorData: Array.from(new Uint8Array((credential as any).response.authenticatorData)),
-          signature: Array.from(new Uint8Array((credential as any).response.signature))
+          authenticatorData: Array.from(new Uint8Array((credential.response as any).authenticatorData)),
+          signature: Array.from(new Uint8Array((credential.response as any).signature))
         });
 
         const { user, accessToken } = loginResponse.data;
@@ -248,19 +250,29 @@ export default function LoginPage() {
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
-                  className="space-y-2"
+                  className="space-y-4"
                 >
-                  <Label htmlFor="totp">2FA Code</Label>
-                  <Input
-                    id="totp"
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={totpCode}
-                    onChange={(e) => setTotpCode(e.target.value)}
-                    maxLength={6}
-                    autoComplete="one-time-code"
-                  />
-                  <p className="text-xs text-muted-foreground">
+                  <Label htmlFor="totp">2FA Authentication Code</Label>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={totpCode}
+                      onChange={(value) => setTotpCode(value)}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <p className="text-xs text-muted-foreground text-center">
                     Enter the 6-digit code from your authenticator app
                   </p>
                 </motion.div>
