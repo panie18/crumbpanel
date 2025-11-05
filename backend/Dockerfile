@@ -1,4 +1,7 @@
-FROM node:20-alpine
+FROM node:18-alpine
+
+# Install Java (OpenJDK 17) for running Minecraft servers
+RUN apk add --no-cache openjdk17-jre
 
 WORKDIR /app
 
@@ -18,7 +21,9 @@ COPY tsconfig.json ./
 RUN npm run build
 
 RUN mkdir -p /app/data
+RUN mkdir -p /app/minecraft-servers
+RUN mkdir -p /app/backups
 
 EXPOSE 5829
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/main"]
