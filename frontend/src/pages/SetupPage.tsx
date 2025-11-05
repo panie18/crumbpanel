@@ -62,7 +62,7 @@ export default function SetupPage() {
 			axios.post(`${API_URL}/auth/setup`, data),
 		onSuccess: (response) => {
 			const { user, accessToken } = response.data;
-			setAuth(user, accessToken);
+			setAuth(user, accessToken, null); // Fix: add null for refreshToken
 			setCustomColors(customPrimary, customAccent);
 			toast.success('Welcome to CrumbPanel! 🎉');
 			navigate('/');
