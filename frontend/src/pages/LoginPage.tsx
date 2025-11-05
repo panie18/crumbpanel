@@ -59,15 +59,15 @@ export default function LoginPage() {
   }, [isAuthenticated, navigate]);
 
   const loginMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string; totpToken?: string }) => {
+    mutationFn: async (credentials: { email: string; password: string }) => {
       console.log('🔐 [LOGIN] Attempting login...');
       
       // Try regular login first
-      if (!data.totpToken) {
+      if (!credentials.totpToken) {
         try {
           const response = await axios.post(`${API_URL}/auth/login`, {
-            email: data.email,
-            password: data.password
+            email: credentials.email,
+            password: credentials.password
           });
           return response;
         } catch (error: any) {
@@ -82,17 +82,18 @@ export default function LoginPage() {
       } else {
         // Login with TOTP
         const response = await axios.post(`${API_URL}/auth/totp/login`, {
-          email: data.email,
-          password: data.password,
-          totpToken: data.totpToken
+          email: credentials.email,
+          password: credentials.password,
+          totpToken: credentials.totpToken
         });
         return response;
       }
     },
     onSuccess: (response) => {
-      const { user, accessToken } = response.data;
-      setAuth(user, accessToken, null);
-      toast.success('Welcome back! 🎉');
+      console.log('✅ Login successful:', response.data);
+      const { user, token } = response.data;
+      setAuth(user, token);
+      toast.success('Login erfolgreich!');
       navigate('/');
     },
     onError: (error: any) => {

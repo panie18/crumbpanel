@@ -61,7 +61,7 @@ export default function SetupPage() {
 	}, [setupStatus, navigate]);
 
 	const setupMutation = useMutation({
-		mutationFn: async (data: { username: string; email: string; password: string }) => {
+		mutationFn: async (data: any) => {
 			console.log('🚀 [FRONTEND] Starting setup request...');
 			console.log('🚀 [FRONTEND] API URL:', `${API_URL}/auth/setup`);
 			console.log('🚀 [FRONTEND] Setup data:', { username: data.username, email: data.email });
@@ -81,11 +81,10 @@ export default function SetupPage() {
 			}
 		},
 		onSuccess: (response) => {
-			console.log('🎉 [FRONTEND] Setup successful!');
-			const { user, accessToken } = response.data;
-			setAuth(user, accessToken, null);
-			setCustomColors(customPrimary, customAccent);
-			toast.success('Welcome to CrumbPanel! 🎉');
+			console.log('✅ Setup complete:', response.data);
+			const { user, token } = response.data;
+			setAuth(user, token);
+			toast.success('Setup abgeschlossen!');
 			navigate('/');
 		},
 		onError: (error: any) => {

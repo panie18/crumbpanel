@@ -5,6 +5,8 @@ interface User {
   id: string;
   email: string;
   role: string;
+  name?: string;
+  picture?: string;
 }
 
 interface AuthState {
@@ -13,6 +15,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (user: User, token: string) => void;
   logout: () => void;
+  setAuth: (user: User, token: string) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -21,8 +24,21 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
-      login: (user, token) => set({ user, token, isAuthenticated: true }),
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      login: (user, token) => {
+        set({ user, token, isAuthenticated: true });
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('token', token);
+      },
+      logout: () => {
+        set({ user: null, token: null, isAuthenticated: false });
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('token');
+      },
+      setAuth: (user, token) => {
+        set({ user, token, isAuthenticated: true });
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('token', token);
+      },
     }),
     {
       name: 'auth-storage',

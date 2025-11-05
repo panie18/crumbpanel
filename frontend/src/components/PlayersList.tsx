@@ -83,9 +83,9 @@ export default function PlayersList({ serverId }: PlayersListProps) {
                 <div className="flex gap-2">
                   {player.isOnline && (
                     <Button
-                      variant="outline" // Changed from "glass"
+                      variant="outline"
                       size="sm"
-                      onClick={() => kickPlayerMutation.mutate(player.uuid)}
+                      onClick={() => kickMutation.mutate(player.uuid)}
                     >
                       <UserX className="w-4 h-4" />
                     </Button>

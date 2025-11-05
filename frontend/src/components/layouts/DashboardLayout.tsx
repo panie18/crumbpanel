@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -44,12 +44,13 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unsplashOpen, setUnsplashOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout, setAuth } = useAuthStore();
   const { customPrimary } = useThemeStore();
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
+    navigate('/login');
   };
 
   const getInitials = (name?: string) => {
@@ -199,9 +200,9 @@ export default function DashboardLayout() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.picture || undefined} alt={user?.name || user?.email} />
-                      <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
+                    <Avatar>
+                      <AvatarImage src={user?.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${user?.name || user?.email}`} />
+                      <AvatarFallback>{user?.name?.[0] || user?.email[0]}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
