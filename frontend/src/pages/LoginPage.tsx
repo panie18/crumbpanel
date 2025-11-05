@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import ThemeToggle from '@/components/ThemeToggle';
 import toast from 'react-hot-toast';
-import { Server, Eye, EyeOff, Loader2, LogIn, Shield } from 'lucide-react';
+import { Server, Eye, EyeOff, Loader2, LogIn, Shield, Lock } from 'lucide-react';
 
 const API_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:5829/api'
@@ -168,7 +168,7 @@ export default function LoginPage() {
   console.log('✅ [LOGIN] Rendering login form...');
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-background p-4">
       <div className="fixed top-4 right-4">
         <ThemeToggle />
       </div>
@@ -245,13 +245,13 @@ export default function LoginPage() {
               >
                 {loginMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 w-4 h-4 animate-spin" />
-                    Signing in...
+                    <Lock className="mr-2 h-4 w-4 animate-spin" />
+                    Wird angemeldet...
                   </>
                 ) : (
                   <>
-                    <LogIn className="mr-2 w-4 h-4" />
-                    Sign In
+                    <Lock className="mr-2 h-4 w-4" />
+                    Anmelden
                   </>
                 )}
               </Button>
