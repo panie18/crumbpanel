@@ -14,7 +14,7 @@ interface PlayersListProps {
 export default function PlayersList({ serverId }: PlayersListProps) {
   const queryClient = useQueryClient();
 
-  const { data: players, isLoading } = useQuery({
+  const { data: players, isLoading, refetch } = useQuery({
     queryKey: ['players', serverId],
     queryFn: () =>
       serverId ? playersApi.getByServer(serverId) : playersApi.getAll(),
