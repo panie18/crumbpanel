@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Download,
   Upload,
@@ -13,33 +13,44 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { loadSatoshiFont } from '@/components/ui/typography';
+import { backupsApi, serversApi } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 export default function BackupsPage() {
   loadSatoshiFont();
 
-  const mockBackups = [
-    {
-      id: 1,
-      server: 'Survival Server',
-      size: '2.5 GB',
-      date: '2024-01-15 14:30',
-      type: 'Auto',
+  const { data: backupsResponse, isLoading, refetch } = useQuery({
+    queryKey: ['backups'],
+    queryFn: () => backupsApi.getAll(),
+    refetchInterval: 60000, // Refresh every minute
+  });
+
+  const { data: serversResponse } = useQuery({
+    queryKey: ['servers'],
+    queryFn: () => serversApi.getAll(),
+  });
+
+  const backups = backupsResponse?.data || [];
+  const servers = serversResponse?.data || [];
+
+  // Calculate real storage
+  const totalSize = backups.reduce((sum: number, backup: any) => sum + (backup.sizeBytes || 0), 0);
+  const formattedSize = (totalSize / (1024 * 1024 * 1024)).toFixed(1); // GB
+
+  const downloadMutation = useMutation({
+    mutationFn: (backupId: string) => backupsApi.download(backupId),
+    onSuccess: (response, backupId) => {
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `backup-${backupId}.zip`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      toast.success('Backup downloaded successfully!');
     },
-    {
-      id: 2,
-      server: 'Creative World',
-      size: '1.8 GB',
-      date: '2024-01-15 12:00',
-      type: 'Manual',
-    },
-    {
-      id: 3,
-      server: 'PvP Arena',
-      size: '850 MB',
-      date: '2024-01-14 20:15',
-      type: 'Auto',
-    },
-  ];
+    onError: () => toast.error('Failed to download backup'),
+  });
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -128,44 +139,66 @@ export default function BackupsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Recent Backups</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {backups.length > 0 ? `${backups.length} backups available` : 'No backups created yet'}
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {mockBackups.map((backup) => (
-                  <div
-                    key={backup.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex items-center gap-4">
-                      <HardDrive className="w-8 h-8 text-muted-foreground" />
-                      <div>
-                        <h4 className="font-medium">{backup.server}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {backup.date}
-                        </p>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-muted-foreground">Loading backups...</span>
+                </div>
+              ) : backups.length === 0 ? (
+                <div className="text-center py-12">
+                  <HardDrive className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No backups yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first backup to protect your server data
+                  </p>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Backup
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {backups.map((backup: any) => (
+                    <div
+                      key={backup.id}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-4">
+                        <HardDrive className="w-8 h-8 text-muted-foreground" />
+                        <div>
+                          <h4 className="font-medium">{backup.server}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {backup.date}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Badge
+                          variant={backup.type === 'Auto' ? 'default' : 'secondary'}
+                        >
+                          {backup.type}
+                        </Badge>
+                        <span className="text-sm font-medium">{backup.size}</span>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline">
+                            <Download className="w-4 h-4 mr-1" />
+                            Download
+                          </Button>
+                          <Button size="sm">
+                            <Upload className="w-4 h-4 mr-1" />
+                            Restore
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Badge
-                        variant={backup.type === 'Auto' ? 'default' : 'secondary'}
-                      >
-                        {backup.type}
-                      </Badge>
-                      <span className="text-sm font-medium">{backup.size}</span>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          <Download className="w-4 h-4 mr-1" />
-                          Download
-                        </Button>
-                        <Button size="sm">
-                          <Upload className="w-4 h-4 mr-1" />
-                          Restore
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

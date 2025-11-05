@@ -22,4 +22,10 @@ export class User {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ nullable: true })
+  totpSecret: string;
+
+  @Column({ default: false })
+  totpEnabled: boolean;
 }

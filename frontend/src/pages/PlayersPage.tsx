@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Users, Ban, Shield, Crown, MessageSquare, Eye } from 'lucide-react';
-import { serversApi } from '@/lib/api';
+import { Search, Users, Ban, Shield, Crown, MessageSquare, Eye, RefreshCw } from 'lucide-react';
+import { serversApi, playersApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,50 +15,26 @@ export default function PlayersPage() {
   loadSatoshiFont();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: servers } = useQuery({
+  // Use real API call instead of mock data
+  const { data: playersResponse, isLoading, refetch } = useQuery({
+    queryKey: ['players'],
+    queryFn: () => playersApi.getAll(),
+    refetchInterval: 30000,
+  });
+
+  const { data: serversResponse } = useQuery({
     queryKey: ['servers'],
     queryFn: () => serversApi.getAll(),
   });
 
-  const mockPlayers = [
-    { 
-      id: 1, 
-      name: 'Steve_Builder', 
-      uuid: '069a79f4-44e9-4726-a5be-fca90e38aaf5',
-      server: 'Survival Server',
-      status: 'online',
-      lastSeen: '2 minutes ago',
-      playtime: '45h 23m',
-      rank: 'VIP',
-      avatar: 'https://crafatar.com/avatars/069a79f4-44e9-4726-a5be-fca90e38aaf5?size=32'
-    },
-    { 
-      id: 2, 
-      name: 'Alex_Miner', 
-      uuid: '61699b2e-d327-4a01-9f1e-0ea8c3f06bc6',
-      server: 'Creative World',
-      status: 'online',
-      lastSeen: '5 minutes ago',
-      playtime: '23h 11m',
-      rank: 'Member',
-      avatar: 'https://crafatar.com/avatars/61699b2e-d327-4a01-9f1e-0ea8c3f06bc6?size=32'
-    },
-    { 
-      id: 3, 
-      name: 'Enderman_King', 
-      uuid: 'f84c6a79-0a4e-45e0-879b-cd49ebd4c4e2',
-      server: null,
-      status: 'offline',
-      lastSeen: '2 hours ago',
-      playtime: '102h 45m',
-      rank: 'Admin',
-      avatar: 'https://crafatar.com/avatars/f84c6a79-0a4e-45e0-879b-cd49ebd4c4e2?size=32'
-    },
-  ];
+  // Extract real data or use fallback
+  const players = playersResponse?.data || [];
+  const servers = serversResponse?.data || [];
 
-  const onlinePlayers = mockPlayers.filter(p => p.status === 'online').length;
-  const totalPlayers = mockPlayers.length;
-  const vipPlayers = mockPlayers.filter(p => p.rank === 'VIP').length;
+  // Calculate real stats
+  const onlinePlayers = players.filter((p: any) => p.status === 'online').length;
+  const totalPlayers = players.length;
+  const vipPlayers = players.filter((p: any) => p.rank === 'VIP' || p.rank === 'Admin').length;
 
   const getRankColor = (rank: string) => {
     switch (rank) {
@@ -69,7 +45,7 @@ export default function PlayersPage() {
     }
   };
 
-  const filteredPlayers = mockPlayers.filter(player =>
+  const filteredPlayers = players.filter(player =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -157,51 +133,73 @@ export default function PlayersPage() {
           <Card>
             <CardHeader>
               <CardTitle>Player List</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {players.length > 0 ? `Showing ${players.length} players` : 'No players found'}
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {filteredPlayers.map((player) => (
-                  <div key={player.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={player.avatar} alt={player.name} />
-                        <AvatarFallback>{player.name.slice(0, 2)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{player.name}</h4>
-                          <Badge className={getRankColor(player.rank)}>
-                            {player.rank}
-                          </Badge>
-                          {player.status === 'online' && (
-                            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                          )}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-muted-foreground">Loading players...</span>
+                </div>
+              ) : players.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No players yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Players will appear here once they join your servers
+                  </p>
+                  <Button onClick={() => refetch()}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredPlayers.map((player) => (
+                    <div key={player.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={player.avatar} alt={player.name} />
+                          <AvatarFallback>{player.name.slice(0, 2)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{player.name}</h4>
+                            <Badge className={getRankColor(player.rank)}>
+                              {player.rank}
+                            </Badge>
+                            {player.status === 'online' && (
+                              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {player.server ? `Playing on ${player.server}` : `Last seen: ${player.lastSeen}`}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Playtime: {player.playtime}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {player.server ? `Playing on ${player.server}` : `Last seen: ${player.lastSeen}`}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Playtime: {player.playtime}
-                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          Message
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-600">
+                          <Ban className="w-4 h-4 mr-1" />
+                          Ban
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        <MessageSquare className="w-4 h-4 mr-1" />
-                        Message
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline" className="text-red-600">
-                        <Ban className="w-4 h-4 mr-1" />
-                        Ban
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

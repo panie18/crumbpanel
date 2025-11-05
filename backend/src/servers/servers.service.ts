@@ -32,18 +32,30 @@ export class ServersService {
         console.log('📁 [SERVERS] Created server directory:', serverPath);
       }
 
+      // Validate server type
+      if (!['java', 'bedrock'].includes(data.serverType)) {
+        throw new Error('Invalid server type. Must be "java" or "bedrock"');
+      }
+
       // Create server entry in database
-      const server = await this.serverRepository.save({
+      const serverData: any = {
         name: data.name,
+        serverType: data.serverType,
         port: data.port,
-        rconPort: data.rconPort,
-        rconPassword: data.rconPassword,
         version: data.version,
         maxRam: data.maxRam,
         status: 'STOPPED',
-      });
+      };
 
-      console.log('✅ [SERVERS] Server created successfully:', server.id);
+      // Only add RCON for Java servers
+      if (data.serverType === 'java') {
+        serverData.rconPort = data.rconPort;
+        serverData.rconPassword = data.rconPassword;
+      }
+
+      const server = await this.serverRepository.save(serverData);
+
+      console.log(`✅ [SERVERS] ${data.serverType.toUpperCase()} server created successfully:`, server.id);
       return server;
     } catch (error) {
       console.error('❌ [SERVERS] Creation failed:', error);

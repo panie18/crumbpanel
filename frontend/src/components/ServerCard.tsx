@@ -13,12 +13,13 @@ interface ServerCardProps {
   server: {
     id: string;
     name: string;
+    serverType: string;
     version: string;
     port: number;
     status: 'RUNNING' | 'STOPPED' | 'STARTING' | 'STOPPING';
     players?: any[];
     maxRam: number;
-    rconPort: number;
+    rconPort?: number;
   };
 }
 
@@ -82,6 +83,14 @@ export default function ServerCard({ server }: ServerCardProps) {
     }
   };
 
+  const getServerTypeIcon = () => {
+    return server.serverType === 'bedrock' ? '🧱' : '☕';
+  };
+
+  const getServerTypeLabel = () => {
+    return server.serverType === 'bedrock' ? 'Bedrock' : 'Java';
+  };
+
   const isLoading = startMutation.isPending || stopMutation.isPending || 
                     restartMutation.isPending || deleteMutation.isPending;
 
@@ -105,13 +114,19 @@ export default function ServerCard({ server }: ServerCardProps) {
               />
               {server.name}
             </CardTitle>
-            <Badge variant={getStatusVariant()}>
-              {server.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {getServerTypeIcon()} {getServerTypeLabel()}
+              </Badge>
+              <Badge variant={getStatusVariant()}>
+                {server.status}
+              </Badge>
+            </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>Minecraft {server.version}</span>
             <span>Port {server.port}</span>
+            {server.rconPort && <span>RCON {server.rconPort}</span>}
           </div>
         </CardHeader>
 
@@ -135,11 +150,30 @@ export default function ServerCard({ server }: ServerCardProps) {
             <div className="text-center">
               <div className="flex items-center justify-center text-2xl font-bold mb-1">
                 <Activity className="w-5 h-5 mr-1 text-muted-foreground" />
-                20
+                {server.serverType === 'bedrock' ? 'N/A' : '20'}
               </div>
-              <p className="text-xs text-muted-foreground">TPS</p>
+              <p className="text-xs text-muted-foreground">
+                {server.serverType === 'bedrock' ? 'Perf' : 'TPS'}
+              </p>
             </div>
           </div>
+
+          {/* Server Type Specific Info */}
+          {server.serverType === 'bedrock' && (
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded p-2">
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                🔄 Cross-platform compatible with mobile, console & PC
+              </p>
+            </div>
+          )}
+
+          {server.serverType === 'java' && (
+            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded p-2">
+              <p className="text-xs text-orange-700 dark:text-orange-300">
+                🔧 Supports plugins, mods & advanced customization
+              </p>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2">

@@ -21,6 +21,18 @@ export default function PluginLibraryPage() {
     queryFn: () => serversApi.getAll(),
   });
 
+  const { data: pluginsResponse, isLoading } = useQuery({
+    queryKey: ['plugins', searchTerm],
+    queryFn: () => pluginsApi.search(searchTerm || 'popular'),
+    enabled: true,
+  });
+
+  const { data: installedPluginsResponse } = useQuery({
+    queryKey: ['installed-plugins', selectedServer],
+    queryFn: () => selectedServer ? pluginsApi.getInstalled(selectedServer) : Promise.resolve([]),
+    enabled: !!selectedServer,
+  });
+
   const installPluginMutation = useMutation({
     mutationFn: ({ serverId, pluginId }: { serverId: string; pluginId: string }) => {
       console.log('📦 [PLUGINS] Installing plugin:', pluginId, 'on server:', serverId);
@@ -45,6 +57,9 @@ export default function PluginLibraryPage() {
       pluginId: pluginId.toString() 
     });
   };
+
+  const availablePlugins = pluginsResponse?.data || [];
+  const installedPlugins = installedPluginsResponse?.data || [];
 
   const popularPlugins = [
     {
@@ -169,10 +184,15 @@ export default function PluginLibraryPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Popular Plugins</CardTitle>
+                <div>
+                  <CardTitle>Plugin Library</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {availablePlugins.length > 0 ? `${availablePlugins.length} plugins available` : 'Search for plugins...'}
+                  </p>
+                </div>
                 <Select value={selectedServer} onValueChange={setSelectedServer}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select server to install on" />
+                    <SelectValue placeholder="Select server" />
                   </SelectTrigger>
                   <SelectContent>
                     {servers?.data?.map((server: any) => (
@@ -185,48 +205,73 @@ export default function PluginLibraryPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {popularPlugins.map((plugin) => (
-                  <Card key={plugin.id} className="transition-all hover:shadow-md">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">{plugin.name}</CardTitle>
-                        <Badge variant="outline">{plugin.category}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">v{plugin.version}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm">{plugin.description}</p>
-                      
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Download className="w-4 h-4" />
-                          {plugin.downloads}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                          {plugin.rating}
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => handleInstallPlugin(plugin.id)}
-                          disabled={installPluginMutation.isPending || !selectedServer}
-                        >
-                          <Download className="w-4 h-4 mr-1" />
-                          {installPluginMutation.isPending ? 'Installing...' : 'Install'}
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-muted-foreground">Loading plugins...</span>
+                </div>
+              ) : availablePlugins.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No plugins found</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Try searching for specific plugin names like "WorldEdit" or "EssentialsX"
+                  </p>
+                  <Input
+                    placeholder="Search plugins..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-sm mx-auto"
+                  />
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {availablePlugins.map((plugin: any) => {
+                    const isInstalled = installedPlugins.some((installed: any) => installed.id === plugin.id);
+                    
+                    return (
+                      <Card key={plugin.id} className="transition-all hover:shadow-md">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">{plugin.name}</CardTitle>
+                            <Badge variant="outline">{plugin.category}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">v{plugin.version}</p>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm">{plugin.description}</p>
+                          
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Download className="w-4 h-4" />
+                              {plugin.downloads}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                              {plugin.rating}
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              className="flex-1"
+                              onClick={() => handleInstallPlugin(plugin.id)}
+                              disabled={installPluginMutation.isPending || !selectedServer || isInstalled}
+                            >
+                              <Download className="w-4 h-4 mr-1" />
+                              {isInstalled ? 'Installed' : installPluginMutation.isPending ? 'Installing...' : 'Install'}
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

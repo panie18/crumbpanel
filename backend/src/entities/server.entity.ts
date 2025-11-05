@@ -13,10 +13,13 @@ export class Server {
   @Column({ unique: true })
   port: number;
 
-  @Column()
+  @Column({ default: 'java' })
+  serverType: string; // 'java' or 'bedrock'
+
+  @Column({ nullable: true })
   rconPort: number;
 
-  @Column()
+  @Column({ nullable: true })
   rconPassword: string;
 
   @Column()

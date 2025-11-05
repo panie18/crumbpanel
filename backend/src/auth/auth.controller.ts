@@ -4,11 +4,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthService } from './auth.service';
 import { User } from '../entities/user.entity';
+import { TotpService } from './totp.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private totpService: TotpService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
@@ -67,6 +69,138 @@ export class AuthController {
     } catch (error) {
       console.error('❌ [AUTH] Failed to update profile picture:', error);
       throw new Error('Failed to update profile picture');
+    }
+  }
+
+  @Post('totp/setup')
+  @UseGuards(AuthGuard('jwt'))
+  async setupTotp(@Req() req: any) {
+    try {
+      console.log('🔐 [TOTP] Setting up TOTP for user:', req.user.email);
+      
+      const { secret, qrCodeUrl, manualEntryKey } = this.totpService.generateSecret(req.user.email);
+      const qrCodeImage = await this.totpService.generateQRCode(qrCodeUrl);
+      
+      // Store secret temporarily (not confirmed yet)
+      await this.userRepository.update(req.user.id, {
+        totpSecret: secret,
+        totpEnabled: false, // Not enabled until verified
+      });
+
+      return {
+        qrCode: qrCodeImage,
+        manualEntryKey,
+        backupCodes: this.totpService.generateBackupCodes(),
+      };
+    } catch (error) {
+      console.error('❌ [TOTP] Setup failed:', error);
+      throw new Error('Failed to setup TOTP');
+    }
+  }
+
+  @Post('totp/verify')
+  @UseGuards(AuthGuard('jwt'))
+  async verifyTotp(@Req() req: any, @Body() { token }: { token: string }) {
+    try {
+      console.log('🔍 [TOTP] Verifying TOTP for user:', req.user.email);
+      
+      const user = await this.userRepository.findOne({
+        where: { id: req.user.id }
+      });
+
+      if (!user?.totpSecret) {
+        throw new Error('TOTP not set up');
+      }
+
+      const isValid = this.totpService.verifyToken(user.totpSecret, token);
+
+      if (isValid) {
+        // Enable TOTP after successful verification
+        await this.userRepository.update(req.user.id, {
+          totpEnabled: true,
+        });
+
+        console.log('✅ [TOTP] TOTP enabled for user:', req.user.email);
+        return { success: true, message: 'TOTP enabled successfully' };
+      } else {
+        throw new Error('Invalid TOTP token');
+      }
+    } catch (error) {
+      console.error('❌ [TOTP] Verification failed:', error);
+      throw new Error(error.message || 'TOTP verification failed');
+    }
+  }
+
+  @Post('totp/login')
+  async loginWithTotp(@Body() data: { email: string; password: string; totpToken: string }) {
+    try {
+      console.log('🔐 [TOTP] Login attempt with TOTP for:', data.email);
+      
+      // First verify email/password
+      const user = await this.userRepository.findOne({
+        where: { email: data.email }
+      });
+
+      if (!user || user.password !== data.password) {
+        throw new Error('Invalid credentials');
+      }
+
+      // If TOTP is enabled, verify the token
+      if (user.totpEnabled && user.totpSecret) {
+        const isValidTotp = this.totpService.verifyToken(user.totpSecret, data.totpToken);
+        
+        if (!isValidTotp) {
+          throw new Error('Invalid TOTP token');
+        }
+      }
+
+      // Generate JWT token
+      const payload = { sub: user.id, email: user.email, role: user.role };
+      const accessToken = this.jwtService.sign(payload);
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          totpEnabled: user.totpEnabled,
+        },
+        accessToken,
+      };
+    } catch (error) {
+      console.error('❌ [TOTP] Login failed:', error);
+      throw new Error(error.message || 'Login failed');
+    }
+  }
+
+  @Post('totp/disable')
+  @UseGuards(AuthGuard('jwt'))
+  async disableTotp(@Req() req: any, @Body() { token }: { token: string }) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: req.user.id }
+      });
+
+      if (!user?.totpSecret) {
+        throw new Error('TOTP not enabled');
+      }
+
+      const isValid = this.totpService.verifyToken(user.totpSecret, token);
+
+      if (isValid) {
+        await this.userRepository.update(req.user.id, {
+          totpSecret: null,
+          totpEnabled: false,
+        });
+
+        return { success: true, message: 'TOTP disabled successfully' };
+      } else {
+        throw new Error('Invalid TOTP token');
+      }
+    } catch (error) {
+      console.error('❌ [TOTP] Disable failed:', error);
+      throw new Error(error.message || 'Failed to disable TOTP');
     }
   }
 }
