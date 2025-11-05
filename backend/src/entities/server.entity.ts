@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Player } from './player.entity';
 
 @Entity('servers')
 export class Server {
@@ -34,6 +35,9 @@ export class Server {
 
   @Column({ nullable: true })
   serverPath: string;
+
+  @OneToMany(() => Player, player => player.server, { cascade: true })
+  players: Player[];
 
   @CreateDateColumn()
   createdAt: Date;

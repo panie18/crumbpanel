@@ -7,23 +7,23 @@ export class Player {
   id: string;
 
   @Column()
-  name: string;
-
-  @Column({ unique: true })
-  uuid: string;
+  username: string;
 
   @Column()
-  serverId: string;
+  uuid: string;
 
-  @ManyToOne(() => Server, server => server.players)
-  @JoinColumn({ name: 'serverId' })
-  server: Server;
+  @Column({ nullable: true })
+  lastSeen: Date;
 
   @Column({ default: false })
   isOnline: boolean;
 
-  @CreateDateColumn()
-  lastSeen: Date;
+  @Column()
+  serverId: string;
+
+  @ManyToOne(() => Server, server => server.players, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'serverId' })
+  server: Server;
 
   @CreateDateColumn()
   createdAt: Date;
