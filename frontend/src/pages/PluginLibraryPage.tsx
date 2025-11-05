@@ -24,12 +24,11 @@ export default function PluginLibraryPage() {
   const { data: pluginsResponse, isLoading } = useQuery({
     queryKey: ['plugins', searchTerm],
     queryFn: () => pluginsApi.search(searchTerm || 'popular'),
-    enabled: true,
   });
 
   const { data: installedPluginsResponse } = useQuery({
     queryKey: ['installed-plugins', selectedServer],
-    queryFn: () => selectedServer ? pluginsApi.getInstalled(selectedServer) : Promise.resolve([]),
+    queryFn: () => selectedServer ? pluginsApi.getInstalled(selectedServer) : Promise.resolve({ data: [] }),
     enabled: !!selectedServer,
   });
 
@@ -58,12 +57,10 @@ export default function PluginLibraryPage() {
     });
   };
 
-  const availablePlugins = pluginsResponse?.data || [];
-  const installedPlugins = installedPluginsResponse?.data || [];
-
-  const popularPlugins = [
+  // Mock popular plugins if no real data
+  const mockPlugins = [
     {
-      id: 1,
+      id: 'worldedit',
       name: 'WorldEdit',
       description: 'The most popular world editing plugin for Minecraft',
       version: '7.2.15',
@@ -72,7 +69,7 @@ export default function PluginLibraryPage() {
       category: 'World Management'
     },
     {
-      id: 2,
+      id: 'essentials',
       name: 'EssentialsX',
       description: 'Essential commands and features for your server',
       version: '2.20.1',
@@ -81,7 +78,7 @@ export default function PluginLibraryPage() {
       category: 'Server Management'
     },
     {
-      id: 3,
+      id: 'luckperms',
       name: 'LuckPerms',
       description: 'Advanced permissions plugin with web editor',
       version: '5.4.113',
@@ -90,7 +87,7 @@ export default function PluginLibraryPage() {
       category: 'Permissions'
     },
     {
-      id: 4,
+      id: 'vault',
       name: 'Vault',
       description: 'Economy and permissions API for plugins',
       version: '1.7.3',
@@ -99,6 +96,9 @@ export default function PluginLibraryPage() {
       category: 'API'
     }
   ];
+
+  const availablePlugins = pluginsResponse?.data || mockPlugins;
+  const installedPlugins = installedPluginsResponse?.data || [];
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
