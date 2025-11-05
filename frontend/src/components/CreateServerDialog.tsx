@@ -69,12 +69,12 @@ export default function CreateServerDialog({
         port: 25565,
         rconPort: 25575,
         rconPassword: '',
-        maxRam: 2,
+        maxRam: 2
       });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to create server');
-    },
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {

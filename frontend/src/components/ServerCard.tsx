@@ -30,7 +30,7 @@ export default function ServerCard({ server }: ServerCardProps) {
     mutationFn: () => serversApi.start(server.id),
     onSuccess: () => {
       toast.success(`Server "${server.name}" started!`);
-      queryClient.invalidateQueries(['servers']);
+      queryClient.invalidateQueries({ queryKey: ['servers'] });
     },
     onError: () => toast.error('Failed to start server')
   });
@@ -39,7 +39,7 @@ export default function ServerCard({ server }: ServerCardProps) {
     mutationFn: () => serversApi.stop(server.id),
     onSuccess: () => {
       toast.success(`Server "${server.name}" stopped!`);
-      queryClient.invalidateQueries(['servers']);
+      queryClient.invalidateQueries({ queryKey: ['servers'] });
     },
     onError: () => toast.error('Failed to stop server')
   });
@@ -48,7 +48,7 @@ export default function ServerCard({ server }: ServerCardProps) {
     mutationFn: () => serversApi.restart(server.id),
     onSuccess: () => {
       toast.success(`Server "${server.name}" restarted!`);
-      queryClient.invalidateQueries(['servers']);
+      queryClient.invalidateQueries({ queryKey: ['servers'] });
     },
     onError: () => toast.error('Failed to restart server')
   });
@@ -57,7 +57,7 @@ export default function ServerCard({ server }: ServerCardProps) {
     mutationFn: () => serversApi.delete(server.id),
     onSuccess: () => {
       toast.success(`Server "${server.name}" deleted!`);
-      queryClient.invalidateQueries(['servers']);
+      queryClient.invalidateQueries({ queryKey: ['servers'] });
     },
     onError: () => toast.error('Failed to delete server')
   });
