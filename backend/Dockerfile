@@ -1,7 +1,7 @@
 FROM node:18-alpine
 
-# Install Java (OpenJDK 17) for running Minecraft servers
-RUN apk add --no-cache openjdk17-jre
+# Install Java 21 (required for Minecraft 1.21+)
+RUN apk add --no-cache openjdk21-jre
 
 WORKDIR /app
 
