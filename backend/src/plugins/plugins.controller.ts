@@ -17,11 +17,19 @@ export class PluginsController {
         version: '7.2.15',
         downloads: '50M+',
         rating: 4.9
+      },
+      {
+        id: 'essentials',
+        name: 'EssentialsX',
+        description: 'Essential commands and features',
+        version: '2.20.1',
+        downloads: '45M+',
+        rating: 4.8
       }
     ];
     
     return mockResults.filter(plugin => 
-      plugin.name.toLowerCase().includes(query.toLowerCase())
+      plugin.name.toLowerCase().includes((query || '').toLowerCase())
     );
   }
 
