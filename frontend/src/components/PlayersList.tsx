@@ -46,7 +46,7 @@ export default function PlayersList({ serverId }: PlayersListProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Players</CardTitle>
-          <Button variant="glass" size="icon" onClick={() => refetch()}>
+          <Button variant="outline" size="icon" onClick={() => refetch()}>
             <RefreshCw className="w-4 h-4" />
           </Button>
         </div>

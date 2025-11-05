@@ -209,7 +209,7 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="flex items-center gap-2">
+                  <Label htmlFor="password">
                     Passwort
                   </Label>
                 </div>
