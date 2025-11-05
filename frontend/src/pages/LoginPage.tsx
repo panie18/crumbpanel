@@ -134,8 +134,8 @@ export default function LoginPage() {
           signature: Array.from(new Uint8Array((credential.response as any).signature))
         });
 
-        const { user, accessToken } = loginResponse.data;
-        setAuth(user, accessToken, null);
+        const { user, token } = loginResponse.data;
+        setAuth(user, token);
         toast.success('FIDO2 login successful! 🎉');
         navigate('/');
       }
