@@ -11,8 +11,8 @@
     --card-foreground: 0 0% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
-    --primary: 0 0% 20%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 90%;
     --secondary-foreground: 0 0% 20%;
     --muted: 0 0% 94%;
@@ -35,8 +35,8 @@
     --card-foreground: 0 0% 95%;
     --popover: 0 0% 10%;
     --popover-foreground: 0 0% 95%;
-    --primary: 0 0% 95%;
-    --primary-foreground: 0 0% 10%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
     --secondary: 0 0% 18%;
     --secondary-foreground: 0 0% 95%;
     --muted: 0 0% 20%;
@@ -70,6 +70,21 @@
 
   .glass-card {
     @apply glass-panel p-6 transition-all duration-300 hover:shadow-xl;
+  }
+
+  /* Custom primary color integration */
+  .primary-color {
+    color: var(--primary);
+  }
+
+  .primary-bg {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+
+  /* Analytics card styling like shadcn */
+  .analytics-card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
   }
 
   .dark .glass-card {

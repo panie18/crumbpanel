@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
 import { Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useThemeStore } from '@/store/themeStore';
 
 const GREETINGS = [
   "What's up",
@@ -33,6 +34,7 @@ const TIME_BASED_GREETINGS = () => {
 
 export default function DashboardWelcome() {
   const { user } = useAuthStore();
+  const { customPrimary, customAccent } = useThemeStore();
   const [greeting, setGreeting] = useState('');
   const [emoji, setEmoji] = useState('');
 
@@ -68,6 +70,7 @@ export default function DashboardWelcome() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
+          style={{ color: customPrimary || 'inherit' }}
         >
           {greeting}, {getFirstName()}! <span className="inline-block animate-bounce">{emoji}</span>
         </motion.h1>
@@ -80,7 +83,7 @@ export default function DashboardWelcome() {
             delay: 0.5,
           }}
         >
-          <Sparkles className="w-6 h-6 text-yellow-400" />
+          <Sparkles className="w-6 h-6" style={{ color: customAccent || '#fbbf24' }} />
         </motion.div>
       </div>
       <motion.p

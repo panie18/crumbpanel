@@ -45,9 +45,14 @@ function AppWrapper() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    if (customPrimary && customAccent) {
-      document.documentElement.style.setProperty('--custom-primary', customPrimary);
-      document.documentElement.style.setProperty('--custom-accent', customAccent);
+    
+    // Apply custom colors system-wide
+    if (customPrimary) {
+      document.documentElement.style.setProperty('--primary', customPrimary);
+      document.documentElement.style.setProperty('--primary-foreground', customAccent || '#ffffff');
+    }
+    if (customAccent) {
+      document.documentElement.style.setProperty('--accent', customAccent);
     }
   }, [theme, customPrimary, customAccent]);
 
