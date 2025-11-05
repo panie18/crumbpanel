@@ -3,7 +3,7 @@ import { playersApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { UserX, Ban, RefreshCw } from 'lucide-react';
+import { UserX, Ban, RefreshCw, UserMinus } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -87,7 +87,7 @@ export default function PlayersList({ serverId }: PlayersListProps) {
                       size="sm"
                       onClick={() => kickMutation.mutate(player.uuid)}
                     >
-                      <UserX className="w-4 h-4" />
+                      <UserMinus className="w-4 h-4" />
                     </Button>
                   )}
                   <Button

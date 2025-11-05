@@ -1,13 +1,11 @@
 import { type ClassValue } from "clsx";
 
-export function cn(...inputs: ClassValue[]) {
-  const clsx = (...args: ClassValue[]) => {
-    return args
-      .flat()
-      .filter(Boolean)
-      .join(' ')
-  }
-  return clsx(inputs)
+export function cn(...inputs: ClassValue[]): string {
+  return inputs
+    .flat()
+    .filter(Boolean)
+    .join(' ')
+    .trim()
 }
 
 export function formatBytes(bytes: number, decimals = 2) {
