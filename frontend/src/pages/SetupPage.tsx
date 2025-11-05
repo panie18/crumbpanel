@@ -58,17 +58,48 @@ export default function SetupPage() {
 	}, [setupStatus, navigate]);
 
 	const setupMutation = useMutation({
-		mutationFn: (data: { username: string; email: string; password: string }) =>
-			axios.post(`${API_URL}/auth/setup`, data),
+		mutationFn: async (data: { username: string; email: string; password: string }) => {
+			console.log('🚀 [FRONTEND] Starting setup request...');
+			console.log('🚀 [FRONTEND] API URL:', `${API_URL}/auth/setup`);
+			console.log('🚀 [FRONTEND] Setup data:', { username: data.username, email: data.email });
+
+			try {
+				const response = await axios.post(`${API_URL}/auth/setup`, data, {
+					timeout: 10000,
+					headers: { 'Content-Type': 'application/json' },
+				});
+				console.log('✅ [FRONTEND] Setup response:', response.data);
+				return response;
+			} catch (error) {
+				console.error('❌ [FRONTEND] Setup request failed:', error);
+				console.error('❌ [FRONTEND] Error response:', error.response?.data);
+				console.error('❌ [FRONTEND] Error status:', error.response?.status);
+				throw error;
+			}
+		},
 		onSuccess: (response) => {
+			console.log('🎉 [FRONTEND] Setup successful!');
 			const { user, accessToken } = response.data;
-			setAuth(user, accessToken, null); // Fix: add null for refreshToken
+			setAuth(user, accessToken, null);
 			setCustomColors(customPrimary, customAccent);
 			toast.success('Welcome to CrumbPanel! 🎉');
 			navigate('/');
 		},
 		onError: (error: any) => {
-			toast.error(error.response?.data?.message || 'Setup failed');
+			console.error('💥 [FRONTEND] Setup mutation failed:', error);
+
+			let errorMessage = 'Setup failed - Unknown error';
+
+			if (error.response?.data?.message) {
+				errorMessage = `Setup failed: ${error.response.data.message}`;
+			} else if (error.code === 'ECONNABORTED') {
+				errorMessage = 'Setup failed: Request timeout';
+			} else if (error.message === 'Network Error') {
+				errorMessage = 'Setup failed: Cannot connect to backend';
+			}
+
+			console.error('💥 [FRONTEND] Showing error:', errorMessage);
+			toast.error(errorMessage, { duration: 8000 });
 		},
 	});
 

@@ -11,8 +11,9 @@ import { Backup } from '../entities/backup.entity';
       type: 'sqlite',
       database: './data/crumbpanel.db',
       entities: [User, Server, Player, Backup],
-      synchronize: true, // Auto-create tables
-      logging: false,
+      synchronize: true,
+      logging: ['error', 'warn', 'info', 'log'],
+      logger: 'advanced-console',
     }),
   ],
 })
