@@ -25,10 +25,11 @@ interface CreateServerDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Updated Minecraft versions based on your research
+// Updated Minecraft versions with 1.21.10
 const MINECRAFT_VERSIONS = [
   // Latest Releases (2025)
-  { value: '1.21.8', label: '1.21.8 (Latest Release)', type: 'latest', date: '17 Jul 2025' },
+  { value: '1.21.10', label: '1.21.10 (Newest Release)', type: 'latest', date: '2025' },
+  { value: '1.21.8', label: '1.21.8', type: 'latest', date: '17 Jul 2025' },
   { value: '1.21.7', label: '1.21.7', type: 'latest', date: '30 Jun 2025' },
   { value: '1.21.6', label: '1.21.6', type: 'latest', date: '17 Jun 2025' },
   { value: '1.21.5', label: '1.21.5', type: 'latest', date: '25 Mar 2025' },
@@ -86,12 +87,12 @@ export default function CreateServerDialog({
 }: CreateServerDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
-    serverType: 'java', // 'java' or 'bedrock'
-    version: '1.21.8', // Latest version
+    serverType: 'java',
+    version: '1.21.10', // Latest version
     port: 25565,
     rconPort: 25575,
     rconPassword: '',
-    maxRam: 2,
+    maxRam: 2
   });
 
   const queryClient = useQueryClient();
@@ -129,7 +130,7 @@ export default function CreateServerDialog({
       setFormData({
         name: '',
         serverType: 'java',
-        version: '1.21.8',
+        version: '1.21.10',
         port: 25565,
         rconPort: 25575,
         rconPassword: '',
@@ -176,7 +177,7 @@ export default function CreateServerDialog({
     setFormData({
       ...formData,
       serverType: type,
-      version: type === 'bedrock' ? '1.21.44' : '1.21.8',
+      version: type === 'bedrock' ? '1.21.44' : '1.21.10',
       port: type === 'bedrock' ? 19132 : 25565, // Bedrock uses different default port
     });
   };

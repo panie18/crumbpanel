@@ -4,12 +4,16 @@ import { Repository } from 'typeorm';
 import { Server } from '../entities/server.entity';
 import * as fs from 'fs';
 import * as path from 'path';
+import { MinecraftDownloaderService } from './minecraft-downloader.service';
+import { ServerManagerService } from './server-manager.service';
 
 @Injectable()
 export class ServersService {
   constructor(
     @InjectRepository(Server)
     private serverRepository: Repository<Server>,
+    private minecraftDownloader: MinecraftDownloaderService,
+    private serverManager: ServerManagerService,
   ) {}
 
   async getAll() {
@@ -44,7 +48,7 @@ export class ServersService {
         port: data.port,
         version: data.version,
         maxRam: data.maxRam,
-        status: 'STOPPED',
+        status: 'INSTALLING',
       };
 
       // Only add RCON for Java servers
@@ -55,11 +59,39 @@ export class ServersService {
 
       const server = await this.serverRepository.save(serverData);
 
+      // Download Minecraft server in background
+      this.downloadMinecraftServer(server.id, data.serverType, data.version, serverPath)
+        .then(() => {
+          this.serverRepository.update(server.id, { status: 'STOPPED' });
+          console.log(`✅ [SERVERS] Server ${server.name} installation completed`);
+        })
+        .catch((error) => {
+          console.error(`❌ [SERVERS] Server ${server.name} installation failed:`, error);
+          this.serverRepository.update(server.id, { status: 'ERROR' });
+        });
+
       console.log(`✅ [SERVERS] ${data.serverType.toUpperCase()} server created successfully:`, server.id);
       return server;
     } catch (error) {
       console.error('❌ [SERVERS] Creation failed:', error);
       throw new Error(`Failed to create server: ${error.message}`);
+    }
+  }
+
+  private async downloadMinecraftServer(serverId: string, serverType: string, version: string, serverPath: string): Promise<void> {
+    console.log(`📥 [SERVERS] Starting download for server ${serverId} - ${serverType} ${version}`);
+    
+    try {
+      if (serverType === 'java') {
+        await this.minecraftDownloader.downloadJavaServer(version, serverPath);
+      } else {
+        await this.minecraftDownloader.downloadBedrockServer(version, serverPath);
+      }
+      
+      console.log(`✅ [SERVERS] Download completed for server ${serverId}`);
+    } catch (error) {
+      console.error(`❌ [SERVERS] Download failed for server ${serverId}:`, error);
+      throw error;
     }
   }
 
@@ -81,14 +113,7 @@ export class ServersService {
     
     console.log(`🚀 [SERVERS] Starting server: ${server.name}`);
     
-    // Update status to STARTING
-    await this.serverRepository.update(id, { status: 'STARTING' });
-    
-    // Simulate server startup process
-    setTimeout(async () => {
-      await this.serverRepository.update(id, { status: 'RUNNING' });
-      console.log(`✅ [SERVERS] Server ${server.name} started successfully`);
-    }, 3000);
+    await this.serverManager.startServer(id);
     
     return { message: `Server ${server.name} is starting...` };
   }
@@ -98,12 +123,7 @@ export class ServersService {
     
     console.log(`🛑 [SERVERS] Stopping server: ${server.name}`);
     
-    await this.serverRepository.update(id, { status: 'STOPPING' });
-    
-    setTimeout(async () => {
-      await this.serverRepository.update(id, { status: 'STOPPED' });
-      console.log(`✅ [SERVERS] Server ${server.name} stopped successfully`);
-    }, 2000);
+    await this.serverManager.stopServer(id);
     
     return { message: `Server ${server.name} is stopping...` };
   }
@@ -113,11 +133,7 @@ export class ServersService {
     
     console.log(`🔄 [SERVERS] Restarting server: ${server.name}`);
     
-    await this.stopServer(id);
-    
-    setTimeout(() => {
-      this.startServer(id);
-    }, 3000);
+    await this.serverManager.restartServer(id);
     
     return { message: `Server ${server.name} is restarting...` };
   }

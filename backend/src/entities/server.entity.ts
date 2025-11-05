@@ -29,7 +29,7 @@ export class Server {
   maxRam: number;
 
   @Column({ default: 'STOPPED' })
-  status: string;
+  status: string; // 'STOPPED', 'STARTING', 'RUNNING', 'STOPPING', 'INSTALLING', 'ERROR'
 
   @OneToMany(() => Player, player => player.server)
   players: Player[];
