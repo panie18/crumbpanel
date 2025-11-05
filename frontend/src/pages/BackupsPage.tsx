@@ -1,22 +1,24 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, Upload, Calendar, HardDrive, RefreshCw, Plus } from 'lucide-react';
-import { serversApi, backupsApi } from '@/lib/api';
+import { backupsApi, serversApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { loadSatoshiFont } from '@/components/ui/typography';
 import toast from 'react-hot-toast';
 
 export default function BackupsPage() {
   loadSatoshiFont();
   const queryClient = useQueryClient();
+  const [selectedServer, setSelectedServer] = useState<string>('');
 
   const { data: backupsResponse, isLoading, refetch } = useQuery({
     queryKey: ['backups'],
     queryFn: () => backupsApi.getAll(),
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   const { data: serversResponse } = useQuery({
@@ -24,40 +26,17 @@ export default function BackupsPage() {
     queryFn: () => serversApi.getAll(),
   });
 
-  // Mock backups if no real data
-  const mockBackups = [
-    { 
-      id: '1', 
-      serverName: 'Survival Server', 
-      size: '2.5 GB', 
-      sizeBytes: 2684354560,
-      createdAt: '2024-01-15T14:30:00Z', 
-      type: 'Auto' 
-    },
-    { 
-      id: '2', 
-      serverName: 'Creative World', 
-      size: '1.8 GB', 
-      sizeBytes: 1932735283,
-      createdAt: '2024-01-15T12:00:00Z', 
-      type: 'Manual' 
-    },
-    { 
-      id: '3', 
-      serverName: 'PvP Arena', 
-      size: '850 MB', 
-      sizeBytes: 891289600,
-      createdAt: '2024-01-14T20:15:00Z', 
-      type: 'Auto' 
-    },
-  ];
-
-  const backups = backupsResponse?.data || mockBackups;
+  const backups = backupsResponse?.data || [];
   const servers = serversResponse?.data || [];
 
-  // Calculate real storage
-  const totalSize = backups.reduce((sum: number, backup: any) => sum + (backup.sizeBytes || 0), 0);
-  const formattedSize = (totalSize / (1024 * 1024 * 1024)).toFixed(1); // GB
+  const createBackupMutation = useMutation({
+    mutationFn: (serverId: string) => backupsApi.create(serverId),
+    onSuccess: () => {
+      toast.success('Backup created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['backups'] });
+    },
+    onError: () => toast.error('Failed to create backup'),
+  });
 
   const downloadMutation = useMutation({
     mutationFn: (backupId: string) => backupsApi.download(backupId),
@@ -74,30 +53,58 @@ export default function BackupsPage() {
     onError: () => toast.error('Failed to download backup'),
   });
 
-  const createBackupMutation = useMutation({
-    mutationFn: (serverId: string) => backupsApi.create(serverId),
+  const restoreMutation = useMutation({
+    mutationFn: ({ backupId, serverId }: { backupId: string; serverId: string }) => 
+      backupsApi.restore(backupId, serverId),
     onSuccess: () => {
-      toast.success('Backup created successfully!');
+      toast.success('Backup restored successfully!');
+      queryClient.invalidateQueries({ queryKey: ['servers'] });
+    },
+    onError: () => toast.error('Failed to restore backup'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (backupId: string) => backupsApi.delete(backupId),
+    onSuccess: () => {
+      toast.success('Backup deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['backups'] });
     },
-    onError: () => toast.error('Failed to create backup'),
+    onError: () => toast.error('Failed to delete backup'),
   });
+
+  const totalSize = backups.reduce((sum: number, backup: any) => sum + (backup.size || 0), 0);
+  const formattedSize = (totalSize / (1024 * 1024 * 1024)).toFixed(1);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Backup Management</h2>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          <Select value={selectedServer} onValueChange={setSelectedServer}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Select server for backup" />
+            </SelectTrigger>
+            <SelectContent>
+              {servers.map((server: any) => (
+                <SelectItem key={server.id} value={server.id}>
+                  {server.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button>
+          <Button 
+            onClick={() => selectedServer && createBackupMutation.mutate(selectedServer)}
+            disabled={!selectedServer || createBackupMutation.isPending}
+          >
             <Plus className="mr-2 h-4 w-4" />
-            Create Backup
+            {createBackupMutation.isPending ? 'Creating...' : 'Create Backup'}
           </Button>
         </div>
       </div>
-
+      
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -105,18 +112,16 @@ export default function BackupsPage() {
           <TabsTrigger value="storage">Storage</TabsTrigger>
           <TabsTrigger value="restore">Restore</TabsTrigger>
         </TabsList>
-
+        
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Backups
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Total Backups</CardTitle>
                 <HardDrive className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{mockBackups.length}</div>
+                <div className="text-2xl font-bold">{backups.length}</div>
                 <p className="text-xs text-muted-foreground">
                   Across all servers
                 </p>
@@ -125,15 +130,13 @@ export default function BackupsPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Storage Used
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
                 <div className="h-4 w-4 text-muted-foreground">💾</div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">5.1 GB</div>
+                <div className="text-2xl font-bold">{formattedSize} GB</div>
                 <p className="text-xs text-muted-foreground">
-                  Of 100 GB available
+                  Of unlimited storage
                 </p>
               </CardContent>
             </Card>
@@ -144,18 +147,18 @@ export default function BackupsPage() {
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2h ago</div>
+                <div className="text-2xl font-bold">
+                  {backups.length > 0 ? 'Just now' : 'Never'}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Survival Server
+                  {backups.length > 0 ? backups[0]?.server?.name || 'Unknown server' : 'No backups yet'}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Auto Backups
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Auto Backups</CardTitle>
                 <div className="h-2 w-2 bg-green-500 rounded-full"></div>
               </CardHeader>
               <CardContent>
@@ -187,10 +190,31 @@ export default function BackupsPage() {
                   <p className="text-muted-foreground mb-4">
                     Create your first backup to protect your server data
                   </p>
-                  <Button onClick={() => servers?.[0] && createBackupMutation.mutate(servers[0].id)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Backup
-                  </Button>
+                  {servers.length > 0 ? (
+                    <div className="space-y-2">
+                      <Select value={selectedServer} onValueChange={setSelectedServer}>
+                        <SelectTrigger className="max-w-sm mx-auto">
+                          <SelectValue placeholder="Select a server" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {servers.map((server: any) => (
+                            <SelectItem key={server.id} value={server.id}>
+                              {server.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        onClick={() => selectedServer && createBackupMutation.mutate(selectedServer)}
+                        disabled={!selectedServer}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create First Backup
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">Create a server first to enable backups</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -199,17 +223,22 @@ export default function BackupsPage() {
                       <div className="flex items-center gap-4">
                         <HardDrive className="w-8 h-8 text-muted-foreground" />
                         <div>
-                          <h4 className="font-medium">{backup.serverName}</h4>
+                          <h4 className="font-medium">{backup.name}</h4>
                           <p className="text-sm text-muted-foreground">
                             {new Date(backup.createdAt).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Server: {backup.server?.name || 'Unknown'}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <Badge variant={backup.type === 'Auto' ? 'default' : 'secondary'}>
-                          {backup.type}
+                        <Badge variant={backup.type === 'AUTO' ? 'default' : 'secondary'}>
+                          {backup.type || 'MANUAL'}
                         </Badge>
-                        <span className="text-sm font-medium">{backup.size}</span>
+                        <span className="text-sm font-medium">
+                          {(backup.size / (1024 * 1024 * 1024)).toFixed(2)} GB
+                        </span>
                         <div className="flex gap-2">
                           <Button 
                             size="sm" 
@@ -220,9 +249,27 @@ export default function BackupsPage() {
                             <Download className="w-4 h-4 mr-1" />
                             Download
                           </Button>
-                          <Button size="sm">
-                            <Upload className="w-4 h-4 mr-1" />
-                            Restore
+                          <Select onValueChange={(serverId) => 
+                            restoreMutation.mutate({ backupId: backup.id, serverId })
+                          }>
+                            <SelectTrigger className="w-32">
+                              <SelectValue placeholder="Restore" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {servers.map((server: any) => (
+                                <SelectItem key={server.id} value={server.id}>
+                                  {server.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => deleteMutation.mutate(backup.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            Delete
                           </Button>
                         </div>
                       </div>
