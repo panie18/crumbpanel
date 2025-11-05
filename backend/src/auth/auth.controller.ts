@@ -2,6 +2,7 @@ import { Controller, Get, Post, Patch, Body, UseGuards, Req } from '@nestjs/comm
 import { AuthGuard } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { User } from '../entities/user.entity';
 import { TotpService } from './totp.service';
@@ -10,6 +11,7 @@ import { TotpService } from './totp.service';
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private jwtService: JwtService,
     private totpService: TotpService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
