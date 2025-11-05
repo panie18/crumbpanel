@@ -1,10 +1,17 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AuthService } from './auth.service';
+import { User } from '../entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
 
   @Get('setup-status')
   getSetupStatus() {
