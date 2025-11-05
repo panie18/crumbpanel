@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Query, Res } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Response } from 'express';
 import { ServersService } from './servers.service';
 
 @Controller('servers')
@@ -8,67 +9,78 @@ export class ServersController {
   constructor(private serversService: ServersService) {}
 
   @Get()
-  async getAll() {
-    console.log('🎮 [SERVERS] Getting all servers...');
+  async getAllServers() {
+    console.log('📋 [CONTROLLER] Getting all servers...');
     return this.serversService.getAll();
   }
 
-  @Post()
-  async create(@Body() data: any, @Req() req: any) {
-    console.log('🎮 [SERVERS] Creating server for user:', req.user?.email);
-    console.log('🎮 [SERVERS] Server data:', data);
-    
-    try {
-      // Validate required fields
-      if (!data.name?.trim()) {
-        throw new Error('Server name is required');
-      }
-      
-      if (!data.version) {
-        throw new Error('Minecraft version is required');
-      }
-      
-      if (!data.rconPassword?.trim()) {
-        throw new Error('RCON password is required');
-      }
-      
-      const result = await this.serversService.create(data);
-      console.log('✅ [SERVERS] Server created successfully:', result.id);
-      
-      return result;
-    } catch (error) {
-      console.error('❌ [SERVERS] Creation failed:', error);
-      throw error;
-    }
-  }
-
   @Get(':id')
-  async findById(@Param('id') id: string) {
-    console.log('🎮 [SERVERS] Getting server:', id);
+  async getServer(@Param('id') id: string) {
+    console.log('📋 [CONTROLLER] Getting server:', id);
     return this.serversService.findById(id);
   }
 
+  @Get(':id/logs')
+  async getServerLogs(@Param('id') id: string) {
+    console.log('📜 [CONTROLLER] Getting logs for server:', id);
+    return this.serversService.getServerLogs(id);
+  }
+
+  @Get(':id/files')
+  async getServerFiles(@Param('id') id: string, @Query('path') path?: string) {
+    console.log('📁 [CONTROLLER] Getting files for server:', id, 'path:', path);
+    return this.serversService.getServerFiles(id, path || '');
+  }
+
+  @Get(':id/files/download')
+  async downloadFile(@Param('id') id: string, @Query('path') filePath: string, @Res() res: Response) {
+    console.log('📥 [CONTROLLER] Downloading file:', filePath, 'from server:', id);
+    
+    try {
+      const fileBuffer = await this.serversService.downloadFile(id, filePath);
+      const fileName = filePath.split('/').pop() || 'download';
+      
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(fileBuffer);
+    } catch (error) {
+      res.status(404).json({ error: 'File not found' });
+    }
+  }
+
+  @Post()
+  async createServer(@Body() data: any) {
+    console.log('🔨 [CONTROLLER] Creating server:', data);
+    return this.serversService.create(data);
+  }
+
   @Post(':id/start')
-  async start(@Param('id') id: string) {
-    console.log('🎮 [SERVERS] Starting server:', id);
+  async startServer(@Param('id') id: string) {
+    console.log('🚀 [CONTROLLER] Starting server:', id);
     return this.serversService.startServer(id);
   }
 
   @Post(':id/stop')
-  async stop(@Param('id') id: string) {
-    console.log('🎮 [SERVERS] Stopping server:', id);
+  async stopServer(@Param('id') id: string) {
+    console.log('🛑 [CONTROLLER] Stopping server:', id);
     return this.serversService.stopServer(id);
   }
 
   @Post(':id/restart')
-  async restart(@Param('id') id: string) {
-    console.log('🎮 [SERVERS] Restarting server:', id);
+  async restartServer(@Param('id') id: string) {
+    console.log('🔄 [CONTROLLER] Restarting server:', id);
     return this.serversService.restartServer(id);
   }
 
+  @Post(':id/command')
+  async sendCommand(@Param('id') id: string, @Body() { command }: { command: string }) {
+    console.log('📝 [CONTROLLER] Sending command to server:', id, command);
+    return this.serversService.sendCommand(id, command);
+  }
+
   @Delete(':id')
-  async delete(@Param('id') id: string) {
-    console.log('🎮 [SERVERS] Deleting server:', id);
+  async deleteServer(@Param('id') id: string) {
+    console.log('🗑️ [CONTROLLER] Deleting server:', id);
     return this.serversService.deleteServer(id);
   }
 }

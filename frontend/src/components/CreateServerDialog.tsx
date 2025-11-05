@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { serversApi } from '@/lib/api';
 import {
   Dialog,
@@ -7,9 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
+import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Button } from './ui/button';
 import {
   Select,
   SelectContent,
@@ -18,68 +19,12 @@ import {
   SelectValue,
 } from './ui/select';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { Loader2 } from 'lucide-react';
 
 interface CreateServerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-// Updated Minecraft versions with 1.21.10
-const MINECRAFT_VERSIONS = [
-  // Latest Releases (2025)
-  { value: '1.21.10', label: '1.21.10 (Newest Release)', type: 'latest', date: '2025' },
-  { value: '1.21.8', label: '1.21.8', type: 'latest', date: '17 Jul 2025' },
-  { value: '1.21.7', label: '1.21.7', type: 'latest', date: '30 Jun 2025' },
-  { value: '1.21.6', label: '1.21.6', type: 'latest', date: '17 Jun 2025' },
-  { value: '1.21.5', label: '1.21.5', type: 'latest', date: '25 Mar 2025' },
-  
-  // Current Releases (2024)
-  { value: '1.21.4', label: '1.21.4 (Stable)', type: 'stable', date: '3 Dec 2024' },
-  { value: '1.21.3', label: '1.21.3', type: 'stable', date: '23 Oct 2024' },
-  { value: '1.21.2', label: '1.21.2', type: 'stable', date: '22 Oct 2024' },
-  { value: '1.21.1', label: '1.21.1', type: 'stable', date: '8 Aug 2024' },
-  { value: '1.21', label: '1.21 (Tricky Trials)', type: 'stable', date: '13 Jun 2024' },
-  
-  // Popular Legacy Versions
-  { value: '1.20.6', label: '1.20.6', type: 'legacy', date: undefined },
-  { value: '1.20.4', label: '1.20.4 (Popular)', type: 'popular', date: undefined },
-  { value: '1.20.1', label: '1.20.1 (Popular)', type: 'popular', date: undefined },
-  { value: '1.19.4', label: '1.19.4', type: 'legacy', date: undefined },
-  { value: '1.19.2', label: '1.19.2 (Popular)', type: 'popular', date: undefined },
-  { value: '1.18.2', label: '1.18.2', type: 'legacy', date: undefined },
-  { value: '1.17.1', label: '1.17.1', type: 'legacy', date: undefined },
-  { value: '1.16.5', label: '1.16.5 (Popular)', type: 'popular', date: undefined },
-  { value: '1.12.2', label: '1.12.2 (Modded)', type: 'modded', date: undefined },
-  { value: '1.8.9', label: '1.8.9 (PvP)', type: 'pvp', date: undefined },
-  { value: '1.7.10', label: '1.7.10 (Legacy)', type: 'legacy', date: undefined },
-];
-
-const BEDROCK_VERSIONS = [
-  { value: '1.21.44', label: '1.21.44 (Latest Bedrock)', type: 'bedrock', date: undefined },
-  { value: '1.21.43', label: '1.21.43', type: 'bedrock', date: undefined },
-  { value: '1.21.42', label: '1.21.42', type: 'bedrock', date: undefined },
-  { value: '1.21.41', label: '1.21.41', type: 'bedrock', date: undefined },
-  { value: '1.21.40', label: '1.21.40', type: 'bedrock', date: undefined },
-  { value: '1.21.30', label: '1.21.30', type: 'bedrock', date: undefined },
-  { value: '1.21.23', label: '1.21.23', type: 'bedrock', date: undefined },
-  { value: '1.21.22', label: '1.21.22', type: 'bedrock', date: undefined },
-  { value: '1.21.21', label: '1.21.21', type: 'bedrock', date: undefined },
-  { value: '1.21.20', label: '1.21.20', type: 'bedrock', date: undefined },
-];
-
-const getVersionBadgeColor = (type: string) => {
-  switch (type) {
-    case 'latest': return 'bg-green-600 text-white';
-    case 'stable': return 'bg-blue-500 text-white';
-    case 'popular': return 'bg-purple-500 text-white';
-    case 'modded': return 'bg-orange-500 text-white';
-    case 'pvp': return 'bg-red-500 text-white';
-    case 'legacy': return 'bg-gray-500 text-white';
-    case 'bedrock': return 'bg-cyan-500 text-white';
-    default: return 'bg-gray-400 text-white';
-  }
-};
 
 export default function CreateServerDialog({
   open,
@@ -88,31 +33,108 @@ export default function CreateServerDialog({
   const [formData, setFormData] = useState({
     name: '',
     serverType: 'java',
-    version: '1.21.10', // Latest version
+    version: '', // Will be set to latest
     port: 25565,
     rconPort: 25575,
     rconPassword: '',
-    maxRam: 2
+    maxRam: 2,
+    maxPlayers: 20
   });
+  
+  const [latestVersion, setLatestVersion] = useState<string>('');
+  const [minecraftVersions, setMinecraftVersions] = useState<any[]>([]);
+  const [loadingVersions, setLoadingVersions] = useState(false);
 
   const queryClient = useQueryClient();
 
+  // Fetch latest Minecraft version from Mojang API
+  useEffect(() => {
+    if (open) {
+      fetchMinecraftVersions();
+    }
+  }, [open]);
+
+  const fetchMinecraftVersions = async () => {
+    setLoadingVersions(true);
+    try {
+      const response = await axios.get('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
+      const versions = response.data.versions;
+      
+      // Filter only release versions
+      const releaseVersions = versions
+        .filter((v: any) => v.type === 'release')
+        .slice(0, 15); // Get latest 15 releases
+      
+      const latest = releaseVersions[0]?.id || '1.21.4';
+      
+      console.log('📋 [VERSIONS] Latest Minecraft version from Mojang:', latest);
+      
+      setLatestVersion(latest);
+      setMinecraftVersions(releaseVersions);
+      setFormData(prev => ({ ...prev, version: latest }));
+      
+    } catch (error) {
+      console.error('❌ [VERSIONS] Failed to fetch versions:', error);
+      // Fallback versions if API fails
+      const fallbackLatest = '1.21.4';
+      setLatestVersion(fallbackLatest);
+      setFormData(prev => ({ ...prev, version: fallbackLatest }));
+      
+      setMinecraftVersions([
+        { id: '1.21.4', type: 'release' },
+        { id: '1.21.3', type: 'release' },
+        { id: '1.21.1', type: 'release' },
+        { id: '1.21', type: 'release' },
+        { id: '1.20.6', type: 'release' },
+        { id: '1.20.4', type: 'release' },
+        { id: '1.20.1', type: 'release' },
+        { id: '1.19.4', type: 'release' },
+        { id: '1.19.2', type: 'release' },
+        { id: '1.18.2', type: 'release' },
+        { id: '1.16.5', type: 'release' },
+        { id: '1.12.2', type: 'release' },
+        { id: '1.8.9', type: 'release' },
+      ]);
+    } finally {
+      setLoadingVersions(false);
+    }
+  };
+
+  const getAvailableVersions = () => {
+    if (formData.serverType === 'bedrock') {
+      return [
+        { id: '1.21.44', type: 'bedrock' },
+        { id: '1.21.43', type: 'bedrock' },
+        { id: '1.21.42', type: 'bedrock' },
+        { id: '1.21.41', type: 'bedrock' },
+        { id: '1.21.40', type: 'bedrock' },
+      ];
+    }
+    return minecraftVersions;
+  };
+
+  const handleServerTypeChange = (type: string) => {
+    setFormData({
+      ...formData,
+      serverType: type,
+      version: type === 'bedrock' ? '1.21.44' : latestVersion,
+      port: type === 'bedrock' ? 19132 : 25565,
+    });
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      console.log('🔨 [FRONTEND] Creating server with auth check:', data);
+      console.log('🔨 [FRONTEND] Creating server with latest version:', data);
       
       const API_URL = window.location.hostname === 'localhost' 
         ? 'http://localhost:5829/api'
         : '/api';
       
-      // Get fresh token from localStorage
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       
       if (!token) {
         throw new Error('No authentication token found. Please log in again.');
       }
-      
-      console.log('🔐 [FRONTEND] Using token for server creation');
       
       return axios.post(`${API_URL}/servers`, data, {
         headers: {
@@ -124,17 +146,18 @@ export default function CreateServerDialog({
     },
     onSuccess: () => {
       console.log('✅ [FRONTEND] Server created successfully');
-      toast.success('🎉 Server created successfully!');
+      toast.success(`🎉 Server created with Minecraft ${formData.version}!`);
       queryClient.invalidateQueries({ queryKey: ['servers'] });
       onOpenChange(false);
       setFormData({
         name: '',
         serverType: 'java',
-        version: '1.21.10',
+        version: latestVersion,
         port: 25565,
         rconPort: 25575,
         rconPassword: '',
-        maxRam: 2
+        maxRam: 2,
+        maxPlayers: 20
       });
     },
     onError: (error: any) => {
@@ -155,13 +178,13 @@ export default function CreateServerDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!formData.name.trim()) {
       toast.error('Please enter a server name');
       return;
     }
-
-    if (!formData.rconPassword.trim()) {
+    
+    if (formData.serverType === 'java' && !formData.rconPassword.trim()) {
       toast.error('Please enter a RCON password');
       return;
     }
@@ -169,24 +192,19 @@ export default function CreateServerDialog({
     createMutation.mutate(formData);
   };
 
-  const getAvailableVersions = () => {
-    return formData.serverType === 'bedrock' ? BEDROCK_VERSIONS : MINECRAFT_VERSIONS;
-  };
-
-  const handleServerTypeChange = (type: string) => {
-    setFormData({
-      ...formData,
-      serverType: type,
-      version: type === 'bedrock' ? '1.21.44' : '1.21.10',
-      port: type === 'bedrock' ? 19132 : 25565, // Bedrock uses different default port
-    });
+  const getVersionBadgeColor = (version: any) => {
+    if (version.id === latestVersion) return 'bg-green-600 text-white';
+    if (version.id?.includes('1.20') || version.id?.includes('1.19')) return 'bg-purple-500 text-white';
+    if (version.id?.includes('1.16') || version.id?.includes('1.12')) return 'bg-orange-500 text-white';
+    if (version.id?.includes('1.8')) return 'bg-red-500 text-white';
+    return 'bg-blue-500 text-white';
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New Server</DialogTitle>
+          <DialogTitle>Create New Minecraft Server</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,9 +214,7 @@ export default function CreateServerDialog({
               id="name"
               placeholder="My Minecraft Server"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
           </div>
@@ -233,45 +249,44 @@ export default function CreateServerDialog({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              {formData.serverType === 'bedrock' 
-                ? 'Bedrock servers support cross-platform play (Mobile, Xbox, PlayStation, Switch)'
-                : 'Java servers support plugins, mods, and advanced customization'
-              }
-            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="version">Minecraft Version</Label>
-            <Select 
-              value={formData.version} 
-              onValueChange={(value) => setFormData({ ...formData, version: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select version" />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {getAvailableVersions().map((version) => (
-                  <SelectItem key={version.value} value={version.value}>
-                    <div className="flex items-center gap-2 w-full">
-                      <span className="flex-1">{version.label}</span>
-                      <span className={`px-2 py-0.5 text-xs rounded-full ${getVersionBadgeColor(version.type)}`}>
-                        {version.type}
-                      </span>
-                      {version.date && (
-                        <span className="text-xs text-muted-foreground">
-                          {version.date}
+            {loadingVersions ? (
+              <div className="flex items-center justify-center p-4 border rounded-md">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <span className="text-sm text-muted-foreground">Loading versions from Mojang...</span>
+              </div>
+            ) : (
+              <Select 
+                value={formData.version} 
+                onValueChange={(value) => setFormData({ ...formData, version: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select version" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {getAvailableVersions().map((version) => (
+                    <SelectItem key={version.id} value={version.id}>
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="flex-1">
+                          {version.id}
+                          {version.id === latestVersion && ' (Latest Release)'}
                         </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                        <span className={`px-2 py-0.5 text-xs rounded-full ${getVersionBadgeColor(version)}`}>
+                          {version.id === latestVersion ? 'Latest' : version.type || 'Release'}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <p className="text-xs text-muted-foreground">
               {formData.serverType === 'bedrock' 
-                ? 'Bedrock versions support cross-platform play'
-                : 'Latest: 1.21.8 (July 2025) - includes all Tricky Trials updates'
+                ? 'Latest Bedrock version available'
+                : `Latest Java version: ${latestVersion} (fetched from Mojang API)`
               }
             </p>
           </div>
@@ -303,21 +318,15 @@ export default function CreateServerDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1 GB {formData.serverType === 'bedrock' && '(Recommended for Bedrock)'}</SelectItem>
-                  <SelectItem value="2">2 GB {formData.serverType === 'java' && '(Minimum for Java)'}</SelectItem>
-                  <SelectItem value="4">4 GB (Recommended)</SelectItem>
+                  <SelectItem value="1">1 GB</SelectItem>
+                  <SelectItem value="2">2 GB (Recommended)</SelectItem>
+                  <SelectItem value="4">4 GB</SelectItem>
                   <SelectItem value="6">6 GB</SelectItem>
                   <SelectItem value="8">8 GB</SelectItem>
                   <SelectItem value="12">12 GB</SelectItem>
                   <SelectItem value="16">16 GB</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {formData.serverType === 'bedrock' 
-                  ? 'Bedrock servers typically use less RAM'
-                  : 'Java servers need more RAM for plugins/mods'
-                }
-              </p>
             </div>
           </div>
 
@@ -334,9 +343,6 @@ export default function CreateServerDialog({
                   max={65535}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  RCON allows remote console access
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -382,9 +388,16 @@ export default function CreateServerDialog({
             <Button
               type="submit"
               className="flex-1"
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || loadingVersions}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create Server'}
+              {createMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                `Create Server (${formData.version})`
+              )}
             </Button>
           </div>
         </form>

@@ -49,6 +49,8 @@ export const serversApi = {
   stop: (id: string) => axios.post(`${API_URL}/servers/${id}/stop`),
   restart: (id: string) => axios.post(`${API_URL}/servers/${id}/restart`),
   delete: (id: string) => axios.delete(`${API_URL}/servers/${id}`),
+  sendCommand: (id: string, command: string) => axios.post(`${API_URL}/servers/${id}/command`, { command }),
+  getLogs: (id: string) => axios.get(`${API_URL}/servers/${id}/logs`),
 };
 
 export const pluginsApi = {
