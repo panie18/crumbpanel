@@ -34,7 +34,7 @@ export class ServersService {
   }
 
   async create(data: any) {
-    console.log('🔨 [SERVERS] Creating server with data:', data);
+    console.log('🔨 [SERVERS] Creating server with data:', JSON.stringify(data, null, 2));
     
     try {
       // Validate required fields
@@ -42,15 +42,16 @@ export class ServersService {
         throw new Error('Server name is required');
       }
 
-      // Use provided version or get latest
+      // Use provided version or get latest - but validate it exists
       let version = data.version;
-      if (!version) {
+      if (!version || version === '1.21.10') {
+        // 1.21.10 doesn't exist, get real latest version
         try {
           version = await this.versionService.getLatestReleaseVersion();
-          console.log(`📋 [SERVERS] Using latest version: ${version}`);
+          console.log(`📋 [SERVERS] Using latest version from Mojang: ${version}`);
         } catch (error) {
           console.error('❌ [SERVERS] Failed to get latest version, using fallback');
-          version = '1.21.4'; // Fallback
+          version = '1.21.4'; // Fallback to known good version
         }
       }
 
@@ -86,7 +87,7 @@ export class ServersService {
       }
 
       const server = await this.serverRepository.save(serverData);
-      console.log(`✅ [SERVERS] Server created in database:`, server.id);
+      console.log(`✅ [SERVERS] Server created in database with version ${version}:`, server.id);
 
       // Download server JAR in background
       this.downloadMinecraftServer(server.id, server.serverType, version, serverPath)
@@ -95,14 +96,16 @@ export class ServersService {
           console.log(`✅ [SERVERS] Server ${server.name} installation completed`);
         })
         .catch((error) => {
-          console.error(`❌ [SERVERS] Server ${server.name} installation failed:`, error);
+          console.error(`❌ [SERVERS] Server ${server.name} installation failed:`, error.message);
+          this.addLog(server.id, `[ERROR] Installation failed: ${error.message}`);
+          this.addLog(server.id, `[ERROR] Please check if version ${version} is valid`);
           this.serverRepository.update(server.id, { status: 'ERROR' });
         });
 
       return server;
     } catch (error) {
       console.error('❌ [SERVERS] Creation failed:', error);
-      throw error; // Throw original error for better debugging
+      throw error;
     }
   }
 
@@ -115,22 +118,35 @@ export class ServersService {
         const downloadUrl = `https://minecraft.azureedge.net/bin-linux/bedrock-server-${version}.zip`;
         const fileName = `bedrock-server-${version}.zip`;
         const zipPath = path.join(serverPath, fileName);
+        
+        this.addLog(serverId, `[INFO] Downloading Bedrock server ${version}...`);
         await this.downloadFileFromUrl(downloadUrl, zipPath);
-        console.log(`📦 [SERVERS] Bedrock server downloaded`);
+        this.addLog(serverId, `[INFO] Bedrock server downloaded successfully`);
         
       } else {
         // Download Java server using Mojang API
-        console.log(`📥 [SERVERS] Using Mojang API to download ${version}...`);
-        await this.versionService.downloadServerJar(version, serverPath);
+        this.addLog(serverId, `[INFO] Downloading Minecraft Java ${version} from Mojang...`);
+        
+        try {
+          await this.versionService.downloadServerJar(version, serverPath);
+          this.addLog(serverId, `[INFO] Server JAR downloaded successfully`);
+        } catch (downloadError) {
+          this.addLog(serverId, `[ERROR] Failed to download server JAR: ${downloadError.message}`);
+          throw downloadError;
+        }
       }
 
       // Create server configuration
+      this.addLog(serverId, `[INFO] Creating server configuration...`);
       await this.createServerConfiguration(serverId, serverPath, serverType);
+      this.addLog(serverId, `[INFO] Server configuration created`);
       
+      this.addLog(serverId, `[SUCCESS] Server installation completed! You can now start the server.`);
       console.log(`✅ [SERVERS] Server ${serverId} download completed`);
       
     } catch (error) {
       console.error(`❌ [SERVERS] Download failed:`, error);
+      this.addLog(serverId, `[ERROR] Download failed: ${error.message}`);
       throw error;
     }
   }

@@ -65,27 +65,40 @@ export default function CreateServerDialog({
       const versions = versionsResponse.data;
       
       console.log('📋 [VERSIONS] Latest Minecraft version from Backend:', latest);
+      console.log('📋 [VERSIONS] All versions:', versions.map((v: any) => v.id).join(', '));
       
       setLatestVersion(latest);
       setMinecraftVersions(versions);
       setFormData(prev => ({ ...prev, version: latest }));
       
+      toast.success(`Latest Minecraft version: ${latest}`);
+      
     } catch (error) {
-      console.error('❌ [VERSIONS] Failed to fetch versions:', error);
-      toast.error('Failed to load Minecraft versions');
+      console.error('❌ [VERSIONS] Failed to fetch versions from backend:', error);
       
       // Fallback to direct Mojang API
       try {
+        console.log('🔄 [VERSIONS] Trying direct Mojang API...');
         const response = await axios.get('https://launchermeta.mojang.com/mc/game/version_manifest.json');
         const versions = response.data.versions;
         const releaseVersions = versions.filter((v: any) => v.type === 'release').slice(0, 15);
         const latest = releaseVersions[0]?.id || '1.21.4';
         
+        console.log('📋 [VERSIONS] Latest from Mojang direct:', latest);
+        
         setLatestVersion(latest);
         setMinecraftVersions(releaseVersions);
         setFormData(prev => ({ ...prev, version: latest }));
+        
+        toast.success(`Using Minecraft ${latest} (from Mojang)`);
       } catch (fallbackError) {
         console.error('❌ [VERSIONS] Fallback also failed:', fallbackError);
+        toast.error('Failed to load Minecraft versions. Using default.');
+        
+        // Ultimate fallback
+        const fallbackVersion = '1.21.4';
+        setLatestVersion(fallbackVersion);
+        setFormData(prev => ({ ...prev, version: fallbackVersion }));
       }
     } finally {
       setLoadingVersions(false);
@@ -291,7 +304,7 @@ export default function CreateServerDialog({
             <p className="text-xs text-muted-foreground">
               {formData.serverType === 'bedrock' 
                 ? 'Latest Bedrock version available'
-                : `Latest Java version: ${latestVersion} (fetched from Mojang API)`
+                : `Using ${latestVersion} (latest from Mojang API)`
               }
             </p>
           </div>

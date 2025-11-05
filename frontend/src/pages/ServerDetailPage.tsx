@@ -137,6 +137,25 @@ export default function ServerDetailPage() {
     }
   };
 
+  const getStatusMessage = () => {
+    switch (serverData.status) {
+      case 'ERROR': 
+        return 'Server installation failed. Check console for details.';
+      case 'INSTALLING': 
+        return 'Server is being installed. This may take a few minutes...';
+      case 'STOPPED': 
+        return 'Server is ready to start.';
+      case 'STARTING': 
+        return 'Server is starting up...';
+      case 'RUNNING': 
+        return 'Server is running and accepting connections.';
+      case 'STOPPING': 
+        return 'Server is shutting down...';
+      default: 
+        return 'Unknown status';
+    }
+  };
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -202,6 +221,7 @@ export default function ServerDetailPage() {
             <div className={`w-3 h-3 rounded-full ${getStatusColor()}`} />
             Server Status: {serverData.status}
           </CardTitle>
+          <p className="text-sm text-muted-foreground">{getStatusMessage()}</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -224,6 +244,27 @@ export default function ServerDetailPage() {
               <p className="text-sm text-muted-foreground">TPS</p>
             </div>
           </div>
+          
+          {serverData.status === 'ERROR' && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-700 dark:text-red-300">
+                ⚠️ Server installation failed. Common causes:
+              </p>
+              <ul className="text-xs text-red-600 dark:text-red-400 mt-2 ml-4 list-disc">
+                <li>Invalid Minecraft version (e.g., 1.21.10 doesn't exist)</li>
+                <li>Network issues downloading from Mojang</li>
+                <li>Insufficient disk space</li>
+              </ul>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="mt-3"
+                onClick={() => deleteMutation.mutate()}
+              >
+                Delete and recreate with valid version
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
