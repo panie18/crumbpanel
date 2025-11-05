@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import axios from 'axios';
+import * as https from 'https';
+import * as http from 'http';
 
 @Injectable()
 export class MinecraftDownloaderService {
@@ -13,8 +14,8 @@ export class MinecraftDownloaderService {
     
     try {
       // Get version manifest
-      const manifestResponse = await axios.get(this.versionManifestUrl);
-      const versions = manifestResponse.data.versions;
+      const manifestData = await this.fetchJson(this.versionManifestUrl);
+      const versions = manifestData.versions;
       
       // Find the specific version
       const versionInfo = versions.find((v: any) => v.id === version);
@@ -24,8 +25,7 @@ export class MinecraftDownloaderService {
       }
 
       // Get version details
-      const versionResponse = await axios.get(versionInfo.url);
-      const versionData = versionResponse.data;
+      const versionData = await this.fetchJson(versionInfo.url);
       
       // Get server download URL
       const serverDownload = versionData.downloads?.server;
@@ -81,26 +81,62 @@ export class MinecraftDownloaderService {
     }
   }
 
-  private async downloadFile(url: string, filePath: string): Promise<void> {
-    const response = await axios({
-      method: 'GET',
-      url: url,
-      responseType: 'stream',
-      timeout: 300000, // 5 minutes timeout
-    });
-
-    // Ensure directory exists
-    const dir = path.dirname(filePath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
+  private async fetchJson(url: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      const writer = fs.createWriteStream(filePath);
-      response.data.pipe(writer);
+      const client = url.startsWith('https:') ? https : http;
       
-      writer.on('finish', resolve);
-      writer.on('error', reject);
+      client.get(url, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            resolve(parsed);
+          } catch (error) {
+            reject(new Error(`Failed to parse JSON: ${error.message}`));
+          }
+        });
+      }).on('error', (error) => {
+        reject(error);
+      });
+    });
+  }
+
+  private async downloadFile(url: string, filePath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Ensure directory exists
+      const dir = path.dirname(filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const client = url.startsWith('https:') ? https : http;
+      const file = fs.createWriteStream(filePath);
+      
+      client.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
+        
+        response.pipe(file);
+        
+        file.on('finish', () => {
+          file.close();
+          resolve();
+        });
+        
+        file.on('error', (error) => {
+          fs.unlink(filePath, () => {}); // Delete the file on error
+          reject(error);
+        });
+      }).on('error', (error) => {
+        reject(error);
+      });
     });
   }
 
