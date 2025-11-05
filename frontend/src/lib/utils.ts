@@ -1,8 +1,13 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { type ClassValue } from "clsx";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  const clsx = (...args: ClassValue[]) => {
+    return args
+      .flat()
+      .filter(Boolean)
+      .join(' ')
+  }
+  return clsx(inputs)
 }
 
 export function formatBytes(bytes: number, decimals = 2) {
