@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { Save, Shield, Database, Bell, Palette, Globe, Key, Mail, AlertTriangle, Trash2 } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { Save, Shield, Database, Bell, Palette, Globe, Key, Loader2, Smartphone, Mail, AlertTriangle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import { loadSatoshiFont } from '@/components/ui/typography';
 import { useThemeStore } from '@/store/themeStore';
-import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
-import { useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import axios from 'axios';
 
 export default function SettingsPage() {
@@ -25,6 +26,11 @@ export default function SettingsPage() {
   const [fidoSetupOpen, setFidoSetupOpen] = useState(false);
   const [totpSecret, setTotpSecret] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+
+  const handleSaveColors = () => {
+    setCustomColors(primaryColor, accentColor);
+    toast.success('Colors updated successfully!');
+  };
 
   // TOTP Setup Mutation
   const totpSetupMutation = useMutation({
@@ -58,7 +64,6 @@ export default function SettingsPage() {
     onSuccess: () => {
       toast.success('TOTP enabled successfully!');
       setTotpSetupOpen(false);
-      // Refresh user data
     },
     onError: () => {
       toast.error('Invalid TOTP code. Please try again.');
@@ -72,30 +77,24 @@ export default function SettingsPage() {
         ? 'http://localhost:5829/api'
         : '/api';
 
-      // Check WebAuthn support
       if (!window.PublicKeyCredential) {
         throw new Error('WebAuthn not supported in this browser');
       }
 
-      // Get creation options from server
       const optionsResponse = await axios.post(`${API_URL}/auth/fido2/register/begin`, {
         email: user?.email
       });
 
       const { publicKey } = optionsResponse.data;
-
-      // Convert base64 to Uint8Array
       publicKey.challenge = new Uint8Array(publicKey.challenge);
       publicKey.user.id = new Uint8Array(publicKey.user.id);
 
-      // Create credential
       const credential = await navigator.credentials.create({ publicKey }) as PublicKeyCredential;
 
       if (!credential) {
         throw new Error('Failed to create credential');
       }
 
-      // Send credential to server
       const registrationResponse = await axios.post(`${API_URL}/auth/fido2/register/complete`, {
         credentialId: Array.from(new Uint8Array(credential.rawId)),
         publicKey: Array.from(new Uint8Array((credential.response as any).getPublicKey())),
@@ -112,20 +111,6 @@ export default function SettingsPage() {
       toast.error(error.message || 'Failed to setup FIDO2');
     }
   });
-
-  const handleTotpSetup = () => {
-    totpSetupMutation.mutate();
-  };
-
-  const handleFidoSetup = () => {
-    fidoSetupMutation.mutate();
-  };
-
-  const handleTotpVerify = (token: string) => {
-    if (token.length === 6) {
-      totpVerifyMutation.mutate(token);
-    }
-  };
 
   const resetMutation = useMutation({
     mutationFn: async () => {
@@ -148,7 +133,6 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       toast.success('Database reset successfully!');
-      // Logout and redirect to setup
       localStorage.clear();
       window.location.href = '/setup';
     },
@@ -161,9 +145,26 @@ export default function SettingsPage() {
     },
   });
 
+  const handleTotpSetup = () => {
+    totpSetupMutation.mutate();
+  };
+
+  const handleFidoSetup = () => {
+    fidoSetupMutation.mutate();
+  };
+
+  const handleTotpVerify = (token: string) => {
+    if (token.length === 6) {
+      totpVerifyMutation.mutate(token);
+    }
+  };
+
   const handleDatabaseReset = () => {
     resetMutation.mutate();
   };
+
+  // Check if user has TOTP enabled (mock for now since we don't have the field)
+  const userHasTotp = (user as any)?.totpEnabled || false;
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -212,38 +213,6 @@ export default function SettingsPage() {
                   <Switch id="maintenance-mode" />
                   <Label htmlFor="maintenance-mode">Maintenance Mode</Label>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  Database Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Database Type</Label>
-                  <Select defaultValue="sqlite">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sqlite">SQLite (Current)</SelectItem>
-                      <SelectItem value="mysql">MySQL</SelectItem>
-                      <SelectItem value="postgresql">PostgreSQL</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Database Location</Label>
-                  <Input defaultValue="./data/crumbpanel.db" disabled />
-                </div>
-                <Button variant="outline">
-                  <Database className="w-4 h-4 mr-2" />
-                  Test Connection
-                </Button>
               </CardContent>
             </Card>
 
@@ -299,7 +268,6 @@ export default function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* TOTP Section */}
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
@@ -311,21 +279,21 @@ export default function SettingsPage() {
                         Use Google Authenticator, Authy, or similar apps
                       </p>
                       <div className="flex items-center gap-2 mt-2">
-                        <div className={`w-2 h-2 rounded-full ${user?.totpEnabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <div className={`w-2 h-2 rounded-full ${userHasTotp ? 'bg-green-500' : 'bg-gray-300'}`} />
                         <span className="text-xs font-medium">
-                          {user?.totpEnabled ? 'Enabled' : 'Disabled'}
+                          {userHasTotp ? 'Enabled' : 'Disabled'}
                         </span>
                       </div>
                     </div>
                   </div>
                   <Button 
-                    variant={user?.totpEnabled ? "destructive" : "default"}
+                    variant={userHasTotp ? "destructive" : "default"}
                     onClick={handleTotpSetup}
                     disabled={totpSetupMutation.isPending}
                   >
                     {totpSetupMutation.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : user?.totpEnabled ? (
+                    ) : userHasTotp ? (
                       'Disable'
                     ) : (
                       'Setup TOTP'
@@ -333,7 +301,6 @@ export default function SettingsPage() {
                   </Button>
                 </div>
 
-                {/* FIDO2 Section */}
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
@@ -362,268 +329,199 @@ export default function SettingsPage() {
                     )}
                   </Button>
                 </div>
-
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-blue-900 dark:text-blue-100">Enhanced Security</h4>
-                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                        Enable 2FA to significantly improve your account security. We recommend using both TOTP and FIDO2 for maximum protection.
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
-
-            {/* TOTP Setup Dialog */}
-            <Dialog open={totpSetupOpen} onOpenChange={setTotpSetupOpen}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Setup Two-Factor Authentication</DialogTitle>
-                  <DialogDescription>
-                    Scan the QR code with your authenticator app
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="space-y-4">
-                  {qrCodeUrl && (
-                    <div className="flex justify-center">
-                      <img src={qrCodeUrl} alt="TOTP QR Code" className="w-48 h-48" />
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label>Manual Entry Key</Label>
-                    <div className="p-2 bg-muted rounded font-mono text-sm break-all">
-                      {totpSecret}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Use this key if you can't scan the QR code
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Verification Code</Label>
-                    <InputOTP
-                      maxLength={6}
-                      onComplete={handleTotpVerify}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                      </InputOTPGroup>
-                      <InputOTPSeparator />
-                      <InputOTPGroup>
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                    <p className="text-xs text-muted-foreground">
-                      Enter the 6-digit code from your authenticator app
-                    </p>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-4">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Theme Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Theme Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Theme Mode</Label>
+                <Select value={theme} onValueChange={setTheme}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Theme Mode</Label>
-                  <Select value={theme} onValueChange={setTheme}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="primary-color">Primary Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="primary-color"
+                      type="color"
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="w-16 h-10 p-1"
+                    />
+                    <Input
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="font-mono"
+                    />
+                  </div>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="primary-color">Primary Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="primary-color"
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="w-16 h-10 p-1"
-                      />
-                      <Input
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="font-mono"
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accent-color">Accent Color</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="accent-color"
+                      type="color"
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="w-16 h-10 p-1"
+                    />
+                    <Input
+                      value={accentColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="font-mono"
+                    />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="accent-color">Accent Color</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="accent-color"
-                        type="color"
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="w-16 h-10 p-1"
-                      />
-                      <Input
-                        value={accentColor}
-                        onChange={(e) => setAccentColor(e.target.value)}
-                        className="font-mono"
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button onClick={handleSaveColors}>
-                    Apply Colors
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                
+                <Button onClick={handleSaveColors}>
+                  Apply Colors
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-4">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  SMTP Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-host">SMTP Host</Label>
-                    <Input
-                      id="smtp-host"
-                      placeholder="smtp.gmail.com"
-                      defaultValue="smtp.gmail.com"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-port">SMTP Port</Label>
-                    <Select defaultValue="587">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="25">25 (Unencrypted)</SelectItem>
-                        <SelectItem value="587">587 (STARTTLS)</SelectItem>
-                        <SelectItem value="465">465 (SSL/TLS)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-username">Username</Label>
-                    <Input
-                      id="smtp-username"
-                      placeholder="your-email@gmail.com"
-                      type="email"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smtp-password">Password</Label>
-                    <Input
-                      id="smtp-password"
-                      placeholder="App password or regular password"
-                      type="password"
-                    />
-                  </div>
-                </div>
-                
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                SMTP Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="smtp-from">From Address</Label>
+                  <Label htmlFor="smtp-host">SMTP Host</Label>
                   <Input
-                    id="smtp-from"
-                    placeholder="CrumbPanel <noreply@yourserver.com>"
-                    defaultValue="CrumbPanel <noreply@crumbpanel.local>"
+                    id="smtp-host"
+                    placeholder="smtp.gmail.com"
+                    defaultValue="smtp.gmail.com"
                   />
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch id="smtp-encryption" defaultChecked />
-                  <Label htmlFor="smtp-encryption">Use TLS/SSL Encryption</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="smtp-port">SMTP Port</Label>
+                  <Select defaultValue="587">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25 (Unencrypted)</SelectItem>
+                      <SelectItem value="587">587 (STARTTLS)</SelectItem>
+                      <SelectItem value="465">465 (SSL/TLS)</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline">
-                    Test SMTP Connection
-                  </Button>
-                  <Button>
-                    Save SMTP Settings
-                  </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="smtp-username">Username</Label>
+                  <Input
+                    id="smtp-username"
+                    placeholder="your-email@gmail.com"
+                    type="email"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="smtp-password">Password</Label>
+                  <Input
+                    id="smtp-password"
+                    placeholder="App password or regular password"
+                    type="password"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="smtp-from">From Address</Label>
+                <Input
+                  id="smtp-from"
+                  placeholder="CrumbPanel <noreply@yourserver.com>"
+                  defaultValue="CrumbPanel <noreply@crumbpanel.local>"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch id="smtp-encryption" defaultChecked />
+                <Label htmlFor="smtp-encryption">Use TLS/SSL Encryption</Label>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button variant="outline">
+                  Test SMTP Connection
+                </Button>
+                <Button>
+                  Save SMTP Settings
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notification Preferences
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Server Status Changes</Label>
-                      <p className="text-sm text-muted-foreground">Get notified when servers start or stop</p>
-                    </div>
-                    <Switch defaultChecked />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notification Preferences
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Server Status Changes</Label>
+                    <p className="text-sm text-muted-foreground">Get notified when servers start or stop</p>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Player Join/Leave</Label>
-                      <p className="text-sm text-muted-foreground">Notifications for player activity</p>
-                    </div>
-                    <Switch />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>System Alerts</Label>
-                      <p className="text-sm text-muted-foreground">Important system notifications</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label>Backup Completion</Label>
-                      <p className="text-sm text-muted-foreground">When automatic backups finish</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
+                  <Switch defaultChecked />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Player Join/Leave</Label>
+                    <p className="text-sm text-muted-foreground">Notifications for player activity</p>
+                  </div>
+                  <Switch />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>System Alerts</Label>
+                    <p className="text-sm text-muted-foreground">Important system notifications</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Backup Completion</Label>
+                    <p className="text-sm text-muted-foreground">When automatic backups finish</p>
+                  </div>
+                  <Switch defaultChecked />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="backup" className="space-y-4">
@@ -673,6 +571,53 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* TOTP Setup Dialog */}
+      <Dialog open={totpSetupOpen} onOpenChange={setTotpSetupOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Setup Two-Factor Authentication</DialogTitle>
+            <DialogDescription>
+              Scan the QR code with your authenticator app
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {qrCodeUrl && (
+              <div className="flex justify-center">
+                <img src={qrCodeUrl} alt="TOTP QR Code" className="w-48 h-48" />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label>Manual Entry Key</Label>
+              <div className="p-2 bg-muted rounded font-mono text-sm break-all">
+                {totpSecret}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Verification Code</Label>
+              <InputOTP
+                maxLength={6}
+                onComplete={handleTotpVerify}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                </InputOTPGroup>
+                <InputOTPSeparator />
+                <InputOTPGroup>
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
