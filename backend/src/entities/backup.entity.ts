@@ -7,17 +7,26 @@ export class Backup {
   id: string;
 
   @Column()
-  serverId: string;
-
-  @ManyToOne(() => Server, server => server.backups)
-  @JoinColumn({ name: 'serverId' })
-  server: Server;
+  name: string;
 
   @Column()
-  filename: string;
+  fileName: string;
+
+  @Column()
+  filePath: string;
 
   @Column('bigint')
   size: number;
+
+  @Column({ default: 'MANUAL' })
+  type: string; // 'MANUAL' or 'AUTO'
+
+  @Column()
+  serverId: string;
+
+  @ManyToOne(() => Server, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'serverId' })
+  server: Server;
 
   @CreateDateColumn()
   createdAt: Date;

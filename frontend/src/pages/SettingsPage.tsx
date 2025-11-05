@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Shield, Database, Bell, Palette, Globe, Key, Mail } from 'lucide-react';
+import { Save, Shield, Database, Bell, Palette, Globe, Key, Mail, AlertTriangle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,8 @@ import { useThemeStore } from '@/store/themeStore';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
+import { useMutation } from '@tanstack/react-query';
+import axios from 'axios';
 
 export default function SettingsPage() {
   loadSatoshiFont();
@@ -19,10 +21,148 @@ export default function SettingsPage() {
   const { user } = useAuthStore();
   const [primaryColor, setPrimaryColor] = useState(customPrimary || '#000000');
   const [accentColor, setAccentColor] = useState(customAccent || '#ffffff');
+  const [totpSetupOpen, setTotpSetupOpen] = useState(false);
+  const [fidoSetupOpen, setFidoSetupOpen] = useState(false);
+  const [totpSecret, setTotpSecret] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
 
-  const handleSaveColors = () => {
-    setCustomColors(primaryColor, accentColor);
-    toast.success('Colors updated successfully!');
+  // TOTP Setup Mutation
+  const totpSetupMutation = useMutation({
+    mutationFn: async () => {
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+      
+      return axios.post(`${API_URL}/auth/totp/setup`);
+    },
+    onSuccess: (response) => {
+      setQrCodeUrl(response.data.qrCode);
+      setTotpSecret(response.data.manualEntryKey);
+      setTotpSetupOpen(true);
+      toast.success('TOTP setup initiated! Scan the QR code.');
+    },
+    onError: () => {
+      toast.error('Failed to setup TOTP');
+    }
+  });
+
+  // TOTP Verification Mutation
+  const totpVerifyMutation = useMutation({
+    mutationFn: async (token: string) => {
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+      
+      return axios.post(`${API_URL}/auth/totp/verify`, { token });
+    },
+    onSuccess: () => {
+      toast.success('TOTP enabled successfully!');
+      setTotpSetupOpen(false);
+      // Refresh user data
+    },
+    onError: () => {
+      toast.error('Invalid TOTP code. Please try again.');
+    }
+  });
+
+  // FIDO2 Setup Mutation
+  const fidoSetupMutation = useMutation({
+    mutationFn: async () => {
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+
+      // Check WebAuthn support
+      if (!window.PublicKeyCredential) {
+        throw new Error('WebAuthn not supported in this browser');
+      }
+
+      // Get creation options from server
+      const optionsResponse = await axios.post(`${API_URL}/auth/fido2/register/begin`, {
+        email: user?.email
+      });
+
+      const { publicKey } = optionsResponse.data;
+
+      // Convert base64 to Uint8Array
+      publicKey.challenge = new Uint8Array(publicKey.challenge);
+      publicKey.user.id = new Uint8Array(publicKey.user.id);
+
+      // Create credential
+      const credential = await navigator.credentials.create({ publicKey }) as PublicKeyCredential;
+
+      if (!credential) {
+        throw new Error('Failed to create credential');
+      }
+
+      // Send credential to server
+      const registrationResponse = await axios.post(`${API_URL}/auth/fido2/register/complete`, {
+        credentialId: Array.from(new Uint8Array(credential.rawId)),
+        publicKey: Array.from(new Uint8Array((credential.response as any).getPublicKey())),
+        authenticatorData: Array.from(new Uint8Array((credential.response as any).getAuthenticatorData()))
+      });
+
+      return registrationResponse;
+    },
+    onSuccess: () => {
+      toast.success('FIDO2/Passkey registered successfully!');
+      setFidoSetupOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to setup FIDO2');
+    }
+  });
+
+  const handleTotpSetup = () => {
+    totpSetupMutation.mutate();
+  };
+
+  const handleFidoSetup = () => {
+    fidoSetupMutation.mutate();
+  };
+
+  const handleTotpVerify = (token: string) => {
+    if (token.length === 6) {
+      totpVerifyMutation.mutate(token);
+    }
+  };
+
+  const resetMutation = useMutation({
+    mutationFn: async () => {
+      const confirmed = window.confirm(
+        'Are you ABSOLUTELY sure? This will delete ALL data and cannot be undone!\n\nType "DELETE" to confirm:'
+      );
+      
+      if (!confirmed) throw new Error('Reset cancelled');
+      
+      const confirmation = window.prompt('Type "DELETE" to confirm:');
+      if (confirmation !== 'DELETE') {
+        throw new Error('Reset cancelled - incorrect confirmation');
+      }
+
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+      
+      return axios.post(`${API_URL}/auth/reset-database`);
+    },
+    onSuccess: () => {
+      toast.success('Database reset successfully!');
+      // Logout and redirect to setup
+      localStorage.clear();
+      window.location.href = '/setup';
+    },
+    onError: (error: any) => {
+      if (error.message.includes('cancelled')) {
+        toast('Reset cancelled');
+      } else {
+        toast.error('Failed to reset database');
+      }
+    },
+  });
+
+  const handleDatabaseReset = () => {
+    resetMutation.mutate();
   };
 
   return (
@@ -106,6 +246,43 @@ export default function SettingsPage() {
                 </Button>
               </CardContent>
             </Card>
+
+            <Card className="border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                  <AlertTriangle className="h-5 w-5" />
+                  Danger Zone
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <h4 className="font-medium text-red-900 dark:text-red-100 mb-2">
+                    Reset All Data
+                  </h4>
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-4">
+                    This will permanently delete all servers, players, backups, and settings. 
+                    This action cannot be undone!
+                  </p>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDatabaseReset}
+                    disabled={resetMutation.isPending}
+                  >
+                    {resetMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Resetting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Reset All Data
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
@@ -117,32 +294,75 @@ export default function SettingsPage() {
                   <Shield className="h-5 w-5" />
                   Two-Factor Authentication
                 </CardTitle>
+                <CardDescription>
+                  Add an extra layer of security to your account
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>TOTP (Authenticator App)</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Use Google Authenticator, Authy, or similar apps
-                    </p>
+              <CardContent className="space-y-6">
+                {/* TOTP Section */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                      <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Authenticator App (TOTP)</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Use Google Authenticator, Authy, or similar apps
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className={`w-2 h-2 rounded-full ${user?.totpEnabled ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <span className="text-xs font-medium">
+                          {user?.totpEnabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <Button variant="outline">
-                    Setup TOTP
+                  <Button 
+                    variant={user?.totpEnabled ? "destructive" : "default"}
+                    onClick={handleTotpSetup}
+                    disabled={totpSetupMutation.isPending}
+                  >
+                    {totpSetupMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : user?.totpEnabled ? (
+                      'Disable'
+                    ) : (
+                      'Setup TOTP'
+                    )}
                   </Button>
                 </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>FIDO2/WebAuthn</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Hardware keys, fingerprint, or face recognition
-                    </p>
+
+                {/* FIDO2 Section */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                      <Key className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">FIDO2/WebAuthn Passkey</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Hardware keys, fingerprint, or face recognition
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-300" />
+                        <span className="text-xs font-medium">Not configured</span>
+                      </div>
+                    </div>
                   </div>
-                  <Button variant="outline">
-                    Add Passkey
+                  <Button 
+                    variant="outline"
+                    onClick={handleFidoSetup}
+                    disabled={fidoSetupMutation.isPending}
+                  >
+                    {fidoSetupMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      'Add Passkey'
+                    )}
                   </Button>
                 </div>
-                
+
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
@@ -157,29 +377,58 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  API Keys
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Manage API keys for external integrations
-                </p>
-                <div className="space-y-2">
-                  <Label>Current API Key</Label>
-                  <div className="flex gap-2">
-                    <Input value="crumb_****************************" disabled className="font-mono" />
-                    <Button variant="outline">Regenerate</Button>
+            {/* TOTP Setup Dialog */}
+            <Dialog open={totpSetupOpen} onOpenChange={setTotpSetupOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Setup Two-Factor Authentication</DialogTitle>
+                  <DialogDescription>
+                    Scan the QR code with your authenticator app
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="space-y-4">
+                  {qrCodeUrl && (
+                    <div className="flex justify-center">
+                      <img src={qrCodeUrl} alt="TOTP QR Code" className="w-48 h-48" />
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label>Manual Entry Key</Label>
+                    <div className="p-2 bg-muted rounded font-mono text-sm break-all">
+                      {totpSecret}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Use this key if you can't scan the QR code
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Verification Code</Label>
+                    <InputOTP
+                      maxLength={6}
+                      onComplete={handleTotpVerify}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                      </InputOTPGroup>
+                      <InputOTPSeparator />
+                      <InputOTPGroup>
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                    <p className="text-xs text-muted-foreground">
+                      Enter the 6-digit code from your authenticator app
+                    </p>
                   </div>
                 </div>
-                <Button>
-                  Generate New API Key
-                </Button>
-              </CardContent>
-            </Card>
+              </DialogContent>
+            </Dialog>
           </div>
         </TabsContent>
 

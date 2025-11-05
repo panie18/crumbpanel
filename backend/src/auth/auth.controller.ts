@@ -263,4 +263,31 @@ export class AuthController {
       throw new Error('FIDO2 authentication failed');
     }
   }
+
+  @Post('reset-database')
+  @UseGuards(AuthGuard('jwt'))
+  async resetDatabase(@Req() req: any) {
+    try {
+      // Only allow admin users
+      if (req.user.role !== 'ADMIN') {
+        throw new Error('Only administrators can reset the database');
+      }
+
+      console.log('🗑️ [RESET] Database reset initiated by:', req.user.email);
+
+      // Clear all tables
+      await this.userRepository.clear();
+      // Add other repositories here when they exist
+      
+      console.log('✅ [RESET] Database reset completed');
+      
+      return { 
+        success: true, 
+        message: 'Database reset successfully. Please setup again.' 
+      };
+    } catch (error) {
+      console.error('❌ [RESET] Database reset failed:', error);
+      throw new Error('Failed to reset database');
+    }
+  }
 }
