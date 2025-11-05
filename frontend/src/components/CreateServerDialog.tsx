@@ -116,7 +116,7 @@ export default function CreateServerDialog({
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      console.log('🔨 [FRONTEND] Creating server with latest version:', data);
+      console.log('🔨 [FRONTEND] Creating server with data:', JSON.stringify(data, null, 2));
       
       const API_URL = window.location.hostname === 'localhost' 
         ? 'http://localhost:5829/api'
@@ -128,17 +128,30 @@ export default function CreateServerDialog({
         throw new Error('No authentication token found. Please log in again.');
       }
       
-      return axios.post(`${API_URL}/servers`, data, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000,
-      });
+      try {
+        const response = await axios.post(`${API_URL}/servers`, data, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000,
+        });
+        
+        console.log('✅ [FRONTEND] Server creation response:', response.data);
+        return response;
+      } catch (error: any) {
+        console.error('❌ [FRONTEND] Server creation request failed:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       console.log('✅ [FRONTEND] Server created successfully');
-      toast.success(`🎉 Server created with Minecraft ${formData.version}!`);
+      toast.success(`🎉 Server "${formData.name}" created with Minecraft ${formData.version}!`);
       queryClient.invalidateQueries({ queryKey: ['servers'] });
       onOpenChange(false);
       setFormData({

@@ -42,14 +42,26 @@ export class ServersService {
         throw new Error('Server name is required');
       }
 
-      // Get latest version if not specified
-      const version = data.version || await this.versionService.getLatestReleaseVersion();
+      // Use provided version or get latest
+      let version = data.version;
+      if (!version) {
+        try {
+          version = await this.versionService.getLatestReleaseVersion();
+          console.log(`📋 [SERVERS] Using latest version: ${version}`);
+        } catch (error) {
+          console.error('❌ [SERVERS] Failed to get latest version, using fallback');
+          version = '1.21.4'; // Fallback
+        }
+      }
 
       // Create server directory
-      const serverPath = path.join(
-        '/app/minecraft-servers',
-        data.name.replace(/[^a-zA-Z0-9]/g, '_'),
-      );
+      const serverPath = path.join('/app/minecraft-servers', data.name.replace(/[^a-zA-Z0-9]/g, '_'));
+      
+      // Ensure base directory exists
+      if (!fs.existsSync('/app/minecraft-servers')) {
+        fs.mkdirSync('/app/minecraft-servers', { recursive: true });
+      }
+      
       if (!fs.existsSync(serverPath)) {
         fs.mkdirSync(serverPath, { recursive: true });
         console.log('📁 [SERVERS] Created server directory:', serverPath);
@@ -68,12 +80,13 @@ export class ServersService {
       };
 
       // Only add RCON for Java servers
-      if (data.serverType === 'java' && data.rconPort && data.rconPassword) {
-        serverData.rconPort = data.rconPort;
-        serverData.rconPassword = data.rconPassword;
+      if (data.serverType === 'java') {
+        serverData.rconPort = data.rconPort || 25575;
+        serverData.rconPassword = data.rconPassword || 'minecraft';
       }
 
       const server = await this.serverRepository.save(serverData);
+      console.log(`✅ [SERVERS] Server created in database:`, server.id);
 
       // Download server JAR in background
       this.downloadMinecraftServer(server.id, server.serverType, version, serverPath)
@@ -86,11 +99,10 @@ export class ServersService {
           this.serverRepository.update(server.id, { status: 'ERROR' });
         });
 
-      console.log(`✅ [SERVERS] Server created successfully:`, server.id);
       return server;
     } catch (error) {
       console.error('❌ [SERVERS] Creation failed:', error);
-      throw new Error(`Failed to create server: ${error.message}`);
+      throw error; // Throw original error for better debugging
     }
   }
 

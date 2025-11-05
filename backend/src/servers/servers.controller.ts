@@ -54,8 +54,16 @@ export class ServersController {
 
   @Post()
   async createServer(@Body() data: any) {
-    console.log('🔨 [CONTROLLER] Creating server:', data);
-    return this.serversService.create(data);
+    console.log('🔨 [CONTROLLER] Creating server with data:', JSON.stringify(data, null, 2));
+    
+    try {
+      const server = await this.serversService.create(data);
+      console.log('✅ [CONTROLLER] Server created successfully:', server.id);
+      return server;
+    } catch (error) {
+      console.error('❌ [CONTROLLER] Server creation failed:', error);
+      throw error;
+    }
   }
 
   @Post(':id/start')
