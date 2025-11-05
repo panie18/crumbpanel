@@ -21,32 +21,42 @@ export class AuthService {
   }
 
   async initialSetup(data: { username: string; email: string; password: string }) {
-    const userCount = await this.userRepository.count();
-    
-    if (userCount > 0) {
-      throw new Error('Setup already completed');
+    try {
+      console.log('Starting setup for:', data.email);
+      
+      const userCount = await this.userRepository.count();
+      console.log('Current user count:', userCount);
+      
+      if (userCount > 0) {
+        throw new Error('Setup already completed');
+      }
+
+      console.log('Creating user...');
+      const user = await this.userRepository.save({
+        email: data.email,
+        name: data.username,
+        password: data.password, // In production, hash this!
+        role: 'ADMIN',
+      });
+
+      console.log('User created, generating token...');
+      const payload = { sub: user.id, email: user.email, role: user.role };
+      const accessToken = this.jwtService.sign(payload);
+
+      console.log('Setup completed successfully');
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        accessToken,
+      };
+    } catch (error) {
+      console.error('Setup error:', error);
+      throw new Error(`Setup failed: ${error.message}`);
     }
-
-    // Simple password storage for now (you should hash this in production)
-    const user = await this.userRepository.save({
-      email: data.email,
-      name: data.username,
-      password: data.password,
-      role: 'ADMIN',
-    });
-
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-      accessToken,
-    };
   }
 
   async login(email: string, password: string) {
