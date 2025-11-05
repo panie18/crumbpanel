@@ -27,6 +27,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 function AppWrapper() {
   const navigate = useNavigate();
   const { theme, customPrimary, customAccent } = useThemeStore();
+  const { isAuthenticated } = useAuthStore();
 
   // Check setup status on app load
   const { data: setupStatus, isLoading } = useQuery({
@@ -53,9 +54,13 @@ function AppWrapper() {
   useEffect(() => {
     // Redirect to setup if needed
     if (!isLoading && setupStatus?.needsSetup) {
+      console.log('🔄 Redirecting to setup page');
       navigate('/setup', { replace: true });
+    } else if (!isLoading && setupStatus?.isSetupComplete && !isAuthenticated) {
+      console.log('🔄 Redirecting to login page');
+      navigate('/login', { replace: true });
     }
-  }, [setupStatus, isLoading, navigate]);
+  }, [setupStatus, isLoading, navigate, isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -88,7 +93,9 @@ function AppWrapper() {
       </Route>
 
       {/* Fallback - redirect to setup or login */}
-      <Route path="*" element={<Navigate to={setupStatus?.needsSetup ? "/setup" : "/login"} replace />} />
+      <Route path="*" element={
+        <Navigate to={setupStatus?.needsSetup ? "/setup" : "/login"} replace />
+      } />
     </Routes>
   );
 }
