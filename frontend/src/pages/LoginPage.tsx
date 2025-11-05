@@ -18,12 +18,9 @@ const API_URL = window.location.hostname === 'localhost'
   : '/api';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [totpCode, setTotpCode] = useState('');
+  const [credentials, setCredentials] = useState({ email: '', password: '', totpToken: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [showTotpInput, setShowTotpInput] = useState(false);
-  const [userRequires2FA, setUserRequires2FA] = useState(false);
   const navigate = useNavigate();
   const { setAuth, isAuthenticated } = useAuthStore();
 
@@ -59,35 +56,18 @@ export default function LoginPage() {
   }, [isAuthenticated, navigate]);
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
-      console.log('🔐 [LOGIN] Attempting login...');
-      
-      // Try regular login first
-      if (!credentials.totpToken) {
-        try {
-          const response = await axios.post(`${API_URL}/auth/login`, {
-            email: credentials.email,
-            password: credentials.password
-          });
-          return response;
-        } catch (error: any) {
-          // Check if user has 2FA enabled
-          if (error.response?.status === 400 && error.response?.data?.requires2FA) {
-            setUserRequires2FA(true);
-            setShowTotpInput(true);
-            throw new Error('2FA_REQUIRED');
-          }
-          throw error;
-        }
-      } else {
-        // Login with TOTP
-        const response = await axios.post(`${API_URL}/auth/totp/login`, {
-          email: credentials.email,
-          password: credentials.password,
-          totpToken: credentials.totpToken
-        });
-        return response;
-      }
+    mutationFn: async (creds: { email: string; password: string; totpToken?: string }) => {
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+
+      const response = await axios.post(`${API_URL}/auth/login`, {
+        email: creds.email,
+        password: creds.password,
+        ...(creds.totpToken && { totpToken: creds.totpToken })
+      });
+
+      return response;
     },
     onSuccess: (response) => {
       console.log('✅ Login successful:', response.data);
@@ -97,21 +77,24 @@ export default function LoginPage() {
       navigate('/');
     },
     onError: (error: any) => {
-      console.error('❌ [LOGIN] Failed:', error);
-      if (error.message === '2FA_REQUIRED') {
-        toast('Please enter your 2FA code', { icon: 'ℹ️' });
+      console.error('❌ Login failed:', error);
+      
+      if (error.response?.status === 403 && error.response?.data?.requiresTotp) {
+        setShowTotpInput(true);
+        toast.error('Bitte 2FA-Code eingeben');
       } else {
-        toast.error(error.response?.data?.message || 'Login failed');
+        const errorMessage = error.response?.data?.message || 'Login fehlgeschlagen';
+        toast.error(errorMessage);
       }
-    },
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate({ 
-      email, 
-      password, 
-      totpToken: showTotpInput ? totpCode : undefined 
+    loginMutation.mutate({
+      email: credentials.email,
+      password: credentials.password,
+      ...(credentials.totpToken && { totpToken: credentials.totpToken })
     });
   };
 
@@ -126,7 +109,7 @@ export default function LoginPage() {
       }
 
       // Get challenge from server
-      const challengeResponse = await axios.post(`${API_URL}/auth/fido2/challenge`, { email });
+      const challengeResponse = await axios.post(`${API_URL}/auth/fido2/challenge`, { email: credentials.email });
       const { challenge, allowCredentials } = challengeResponse.data;
 
       // Start WebAuthn ceremony
@@ -145,7 +128,7 @@ export default function LoginPage() {
       if (credential && credential.rawId) {
         // Send credential to server for verification
         const loginResponse = await axios.post(`${API_URL}/auth/fido2/verify`, {
-          email,
+          email: credentials.email,
           credentialId: Array.from(new Uint8Array(credential.rawId)),
           authenticatorData: Array.from(new Uint8Array((credential.response as any).authenticatorData)),
           signature: Array.from(new Uint8Array((credential.response as any).signature))
@@ -217,8 +200,8 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   placeholder="admin@crumbpanel.local"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={credentials.email}
+                  onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
                   required
                   autoComplete="email"
                 />
@@ -231,8 +214,8 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={credentials.password}
+                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                     required
                     autoComplete="current-password"
                     className="pr-10"
@@ -248,35 +231,18 @@ export default function LoginPage() {
               </div>
 
               {showTotpInput && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="space-y-4"
-                >
-                  <Label htmlFor="totp">2FA Authentication Code</Label>
-                  <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={totpCode}
-                      onChange={(value) => setTotpCode(value)}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                      </InputOTPGroup>
-                      <InputOTPSeparator />
-                      <InputOTPGroup>
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    Enter the 6-digit code from your authenticator app
-                  </p>
-                </motion.div>
+                <div className="space-y-2">
+                  <Label htmlFor="totpToken">2FA-Code</Label>
+                  <Input
+                    id="totpToken"
+                    type="text"
+                    placeholder="123456"
+                    value={credentials.totpToken}
+                    onChange={(e) => setCredentials({ ...credentials, totpToken: e.target.value })}
+                    maxLength={6}
+                    required={showTotpInput}
+                  />
+                </div>
               )}
 
               <Button

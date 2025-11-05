@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import ThemeToggle from '@/components/ThemeToggle';
 import UnsplashPicker from '@/components/UnsplashPicker';
 import axios from 'axios';
+import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Server, current: true },
