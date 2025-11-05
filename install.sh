@@ -42,120 +42,15 @@ if [ ! -d "$REPO_DIR" ]; then
 else
     echo -e "${GREEN}✓ Repository already exists${NC}"
     cd $REPO_DIR
+    
+    # Reset any local changes to avoid merge conflicts
+    echo -e "${YELLOW}🔄 Resetting local changes...${NC}"
+    git reset --hard HEAD
+    git clean -fd
+    
     echo -e "${YELLOW}📥 Pulling latest changes...${NC}"
     git pull
 fi
-
-# COMPLETE CLEANUP - Remove ALL broken files with proper rm -rf
-echo -e "${YELLOW}🧹 Complete cleanup of broken files...${NC}"
-find backend/src -name "audit" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "cloud-backup" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "files" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "metrics" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "players" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "websocket" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend -name "prisma" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "dto" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "guards" -type d -exec rm -rf {} + 2>/dev/null || true
-find backend/src -name "strategies" -type d -exec rm -rf {} + 2>/dev/null || true
-rm -f backend/src/servers/rcon.service.ts 2>/dev/null || true
-rm -f backend/src/index.ts 2>/dev/null || true
-
-# OVERWRITE with clean TypeORM files
-echo -e "${YELLOW}✏️ Creating clean TypeORM files...${NC}"
-
-# Overwrite auth.service.ts with clean version
-cat > backend/src/auth/auth.service.ts << 'EOF'
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { User } from '../entities/user.entity';
-
-@Injectable()
-export class AuthService {
-  constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private jwtService: JwtService,
-  ) {}
-
-  async validateAuth0User(profile: any) {
-    const { id, emails, displayName, photos } = profile;
-    
-    let user = await this.userRepository.findOne({
-      where: { auth0Id: id },
-    });
-
-    if (!user) {
-      user = await this.userRepository.save({
-        auth0Id: id,
-        email: emails[0].value,
-        name: displayName,
-        picture: photos[0]?.value,
-        role: 'ADMIN',
-      });
-    }
-
-    return user;
-  }
-
-  async login(user: any) {
-    const payload = { 
-      sub: user.id, 
-      email: user.email,
-      role: user.role 
-    };
-    
-    return {
-      user,
-      accessToken: this.jwtService.sign(payload),
-    };
-  }
-}
-EOF
-
-# Overwrite servers.service.ts with clean version
-cat > backend/src/servers/servers.service.ts << 'EOF'
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Server } from '../entities/server.entity';
-
-@Injectable()
-export class ServersService {
-  constructor(
-    @InjectRepository(Server)
-    private serverRepository: Repository<Server>,
-  ) {}
-
-  async getAll() {
-    return this.serverRepository.find({
-      relations: ['players', 'backups'],
-    });
-  }
-
-  async create(data: any) {
-    return this.serverRepository.save({
-      name: data.name,
-      port: data.port,
-      rconPort: data.rconPort,
-      rconPassword: data.rconPassword,
-      version: data.version,
-      maxRam: data.maxRam,
-    });
-  }
-
-  async findById(id: string) {
-    return this.serverRepository.findOne({
-      where: { id },
-      relations: ['players', 'backups'],
-    });
-  }
-}
-EOF
-
-echo -e "${GREEN}✓ Clean files created${NC}"
 
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
@@ -186,7 +81,7 @@ docker compose up -d
 # Wait for backend
 echo -e "${YELLOW}⏳ Waiting for backend...${NC}"
 for i in {1..60}; do
-  if curl -s http://localhost:5829/api/auth/me > /dev/null 2>&1; then
+  if curl -s http://localhost:5829/api/auth/setup-status > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Backend ready${NC}"
     break
   fi
@@ -228,5 +123,4 @@ echo -e "${GREEN}💾 Database: SQLite in ./data/crumbpanel.db${NC}"
 echo ""
 docker compose ps
 echo ""
-echo -e "${YELLOW}🔐 Configure Auth0 at https://manage.auth0.com${NC}"
 echo -e "${GREEN}⭐ Star: https://github.com/panie18/crumbpanel${NC}"
