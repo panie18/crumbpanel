@@ -118,10 +118,9 @@ export class ServersService {
         fileName = `bedrock-server-${version}.zip`;
         
         const zipPath = path.join(serverPath, fileName);
-        await this.downloadFile(downloadUrl, zipPath);
+        await this.downloadFileFromUrl(downloadUrl, zipPath);
         
-        // Extract ZIP (simple implementation)
-        console.log(`📦 [SERVERS] Extracting Bedrock server...`);
+        console.log(`📦 [SERVERS] Bedrock server downloaded`);
         
       } else {
         // Download Java server
@@ -141,7 +140,7 @@ export class ServersService {
 
         fileName = `minecraft-server-${version}.jar`;
         const jarPath = path.join(serverPath, fileName);
-        await this.downloadFile(serverDownload.url, jarPath);
+        await this.downloadFileFromUrl(serverDownload.url, jarPath);
       }
 
       // Create server configuration
@@ -459,7 +458,7 @@ texturepack-required=false
     });
   }
 
-  private async downloadFile(url: string, filePath: string): Promise<void> {
+  private async downloadFileFromUrl(url: string, filePath: string): Promise<void> {
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
