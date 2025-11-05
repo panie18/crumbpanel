@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { serversApi } from '@/lib/api';
+import { serversApi, versionsApi } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -57,44 +57,36 @@ export default function CreateServerDialog({
   const fetchMinecraftVersions = async () => {
     setLoadingVersions(true);
     try {
-      const response = await axios.get('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
-      const versions = response.data.versions;
+      // Use our backend API that fetches from Mojang
+      const latestResponse = await versionsApi.getLatest();
+      const versionsResponse = await versionsApi.getAll();
       
-      // Filter only release versions
-      const releaseVersions = versions
-        .filter((v: any) => v.type === 'release')
-        .slice(0, 15); // Get latest 15 releases
+      const latest = latestResponse.data.release;
+      const versions = versionsResponse.data;
       
-      const latest = releaseVersions[0]?.id || '1.21.4';
-      
-      console.log('📋 [VERSIONS] Latest Minecraft version from Mojang:', latest);
+      console.log('📋 [VERSIONS] Latest Minecraft version from Backend:', latest);
       
       setLatestVersion(latest);
-      setMinecraftVersions(releaseVersions);
+      setMinecraftVersions(versions);
       setFormData(prev => ({ ...prev, version: latest }));
       
     } catch (error) {
       console.error('❌ [VERSIONS] Failed to fetch versions:', error);
-      // Fallback versions if API fails
-      const fallbackLatest = '1.21.4';
-      setLatestVersion(fallbackLatest);
-      setFormData(prev => ({ ...prev, version: fallbackLatest }));
+      toast.error('Failed to load Minecraft versions');
       
-      setMinecraftVersions([
-        { id: '1.21.4', type: 'release' },
-        { id: '1.21.3', type: 'release' },
-        { id: '1.21.1', type: 'release' },
-        { id: '1.21', type: 'release' },
-        { id: '1.20.6', type: 'release' },
-        { id: '1.20.4', type: 'release' },
-        { id: '1.20.1', type: 'release' },
-        { id: '1.19.4', type: 'release' },
-        { id: '1.19.2', type: 'release' },
-        { id: '1.18.2', type: 'release' },
-        { id: '1.16.5', type: 'release' },
-        { id: '1.12.2', type: 'release' },
-        { id: '1.8.9', type: 'release' },
-      ]);
+      // Fallback to direct Mojang API
+      try {
+        const response = await axios.get('https://launchermeta.mojang.com/mc/game/version_manifest.json');
+        const versions = response.data.versions;
+        const releaseVersions = versions.filter((v: any) => v.type === 'release').slice(0, 15);
+        const latest = releaseVersions[0]?.id || '1.21.4';
+        
+        setLatestVersion(latest);
+        setMinecraftVersions(releaseVersions);
+        setFormData(prev => ({ ...prev, version: latest }));
+      } catch (fallbackError) {
+        console.error('❌ [VERSIONS] Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoadingVersions(false);
     }

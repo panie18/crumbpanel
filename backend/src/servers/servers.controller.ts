@@ -2,11 +2,15 @@ import { Controller, Get, Post, Delete, Body, Param, UseGuards, Query, Res } fro
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { ServersService } from './servers.service';
+import { MinecraftVersionService } from './minecraft-version.service';
 
 @Controller('servers')
 @UseGuards(AuthGuard('jwt'))
 export class ServersController {
-  constructor(private serversService: ServersService) {}
+  constructor(
+    private serversService: ServersService,
+    private versionService: MinecraftVersionService,
+  ) {}
 
   @Get()
   async getAllServers() {
@@ -82,5 +86,26 @@ export class ServersController {
   async deleteServer(@Param('id') id: string) {
     console.log('🗑️ [CONTROLLER] Deleting server:', id);
     return this.serversService.deleteServer(id);
+  }
+
+  @Get('versions/latest')
+  async getLatestVersion() {
+    console.log('🔍 [CONTROLLER] Getting latest Minecraft version...');
+    return {
+      release: await this.versionService.getLatestReleaseVersion(),
+      snapshot: await this.versionService.getLatestSnapshotVersion()
+    };
+  }
+
+  @Get('versions/all')
+  async getAllVersions() {
+    console.log('📋 [CONTROLLER] Getting all Minecraft versions...');
+    return this.versionService.getReleaseVersions(30);
+  }
+
+  @Get('versions/search')
+  async searchVersions(@Query('q') query: string, @Query('type') type?: 'release' | 'snapshot') {
+    console.log('🔍 [CONTROLLER] Searching versions:', query, type);
+    return this.versionService.searchVersions(query, type);
   }
 }

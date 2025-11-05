@@ -6,6 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
 import { Server } from '../entities/server.entity';
+import { MinecraftVersionService } from './minecraft-version.service';
 
 @Injectable()
 export class ServersService {
@@ -15,6 +16,7 @@ export class ServersService {
   constructor(
     @InjectRepository(Server)
     private serverRepository: Repository<Server>,
+    private versionService: MinecraftVersionService,
   ) {
     // Ensure servers directory exists
     if (!fs.existsSync('/app/minecraft-servers')) {
@@ -33,16 +35,15 @@ export class ServersService {
 
   async create(data: any) {
     console.log('🔨 [SERVERS] Creating server with data:', data);
-
+    
     try {
       // Validate required fields
       if (!data.name?.trim()) {
         throw new Error('Server name is required');
       }
 
-      // Get latest Minecraft version
-      const latestVersion = await this.getLatestMinecraftVersion();
-      const version = data.version || latestVersion;
+      // Get latest version if not specified
+      const version = data.version || await this.versionService.getLatestReleaseVersion();
 
       // Create server directory
       const serverPath = path.join(
@@ -93,54 +94,22 @@ export class ServersService {
     }
   }
 
-  private async getLatestMinecraftVersion(): Promise<string> {
-    try {
-      const manifest = await this.fetchJson('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
-      const latestRelease = manifest.versions.find((v: any) => v.type === 'release');
-      console.log(`🔍 [SERVERS] Latest Minecraft version: ${latestRelease.id}`);
-      return latestRelease.id;
-    } catch (error) {
-      console.error('❌ [SERVERS] Failed to get latest version, using fallback');
-      return '1.21.4'; // Fallback version
-    }
-  }
-
   private async downloadMinecraftServer(serverId: string, serverType: string, version: string, serverPath: string): Promise<void> {
     console.log(`📥 [SERVERS] Downloading ${serverType} server ${version}...`);
     
     try {
-      let downloadUrl: string;
-      let fileName: string;
-
       if (serverType === 'bedrock') {
         // Download Bedrock server
-        downloadUrl = `https://minecraft.azureedge.net/bin-linux/bedrock-server-${version}.zip`;
-        fileName = `bedrock-server-${version}.zip`;
-        
+        const downloadUrl = `https://minecraft.azureedge.net/bin-linux/bedrock-server-${version}.zip`;
+        const fileName = `bedrock-server-${version}.zip`;
         const zipPath = path.join(serverPath, fileName);
         await this.downloadFileFromUrl(downloadUrl, zipPath);
-        
         console.log(`📦 [SERVERS] Bedrock server downloaded`);
         
       } else {
-        // Download Java server
-        const manifest = await this.fetchJson('https://piston-meta.mojang.com/mc/game/version_manifest_v2.json');
-        const versionInfo = manifest.versions.find((v: any) => v.id === version);
-        
-        if (!versionInfo) {
-          throw new Error(`Version ${version} not found`);
-        }
-
-        const versionData = await this.fetchJson(versionInfo.url);
-        const serverDownload = versionData.downloads?.server;
-        
-        if (!serverDownload) {
-          throw new Error(`Server JAR not available for version ${version}`);
-        }
-
-        fileName = `minecraft-server-${version}.jar`;
-        const jarPath = path.join(serverPath, fileName);
-        await this.downloadFileFromUrl(serverDownload.url, jarPath);
+        // Download Java server using Mojang API
+        console.log(`📥 [SERVERS] Using Mojang API to download ${version}...`);
+        await this.versionService.downloadServerJar(version, serverPath);
       }
 
       // Create server configuration

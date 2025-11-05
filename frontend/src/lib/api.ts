@@ -108,3 +108,10 @@ export const metricsApi = {
   getOverallMetrics: (timeRange?: string) => 
     axios.get(`${API_URL}/metrics${timeRange ? `?range=${timeRange}` : ''}`),
 };
+
+export const versionsApi = {
+  getLatest: () => axios.get(`${API_URL}/servers/versions/latest`),
+  getAll: () => axios.get(`${API_URL}/servers/versions/all`),
+  search: (query: string, type?: string) => 
+    axios.get(`${API_URL}/servers/versions/search?q=${query}${type ? `&type=${type}` : ''}`),
+};
