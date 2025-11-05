@@ -28,36 +28,13 @@ export default function PluginLibraryPage() {
 
   const { data: installedPluginsResponse } = useQuery({
     queryKey: ['installed-plugins', selectedServer],
-    queryFn: () => selectedServer ? pluginsApi.getInstalled(selectedServer) : Promise.resolve({ data: [] }),
+    queryFn: async () => {
+      if (!selectedServer) return { data: [] };
+      return pluginsApi.getInstalled(selectedServer);
+    },
     enabled: !!selectedServer,
   });
 
-  const installPluginMutation = useMutation({
-    mutationFn: ({ serverId, pluginId }: { serverId: string; pluginId: string }) => {
-      console.log('📦 [PLUGINS] Installing plugin:', pluginId, 'on server:', serverId);
-      return pluginsApi.install(serverId, pluginId);
-    },
-    onSuccess: (_, variables) => {
-      toast.success(`Plugin installed on server successfully!`);
-    },
-    onError: (error: any) => {
-      console.error('❌ [PLUGINS] Installation failed:', error);
-      toast.error(error.response?.data?.message || 'Failed to install plugin');
-    }
-  });
-
-  const handleInstallPlugin = (pluginId: number) => {
-    if (!selectedServer) {
-      toast.error('Please select a server first');
-      return;
-    }
-    installPluginMutation.mutate({ 
-      serverId: selectedServer, 
-      pluginId: pluginId.toString() 
-    });
-  };
-
-  // Mock popular plugins if no real data
   const mockPlugins = [
     {
       id: 'worldedit',
@@ -98,7 +75,35 @@ export default function PluginLibraryPage() {
   ];
 
   const availablePlugins = pluginsResponse?.data || mockPlugins;
-  const installedPlugins = installedPluginsResponse?.data || [];
+  const installedPlugins = (installedPluginsResponse as any)?.data || [];
+
+  const queryClient = useQueryClient();
+
+  const installPluginMutation = useMutation({
+    mutationFn: ({ serverId, pluginId }: { serverId: string; pluginId: string }) => {
+      console.log('📦 [PLUGINS] Installing plugin:', pluginId, 'on server:', serverId);
+      return pluginsApi.install(serverId, pluginId);
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Plugin installed on server successfully!`);
+      queryClient.invalidateQueries({ queryKey: ['installed-plugins', variables.serverId] });
+    },
+    onError: (error: any) => {
+      console.error('❌ [PLUGINS] Installation failed:', error);
+      toast.error(error.response?.data?.message || 'Failed to install plugin');
+    }
+  });
+
+  const handleInstallPlugin = (pluginId: string) => {
+    if (!selectedServer) {
+      toast.error('Please select a server first');
+      return;
+    }
+    installPluginMutation.mutate({ 
+      serverId: selectedServer, 
+      pluginId: pluginId 
+    });
+  };
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
