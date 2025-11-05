@@ -19,25 +19,67 @@ axios.interceptors.request.use((config) => {
 
 export const serversApi = {
   getAll: () => axios.get(`${API_URL}/servers`),
+  getOne: (id: string) => axios.get(`${API_URL}/servers/${id}`),
+  findById: (id: string) => axios.get(`${API_URL}/servers/${id}`),
   create: (data: any) => axios.post(`${API_URL}/servers`, data),
   start: (id: string) => axios.post(`${API_URL}/servers/${id}/start`),
   stop: (id: string) => axios.post(`${API_URL}/servers/${id}/stop`),
   restart: (id: string) => axios.post(`${API_URL}/servers/${id}/restart`),
   delete: (id: string) => axios.delete(`${API_URL}/servers/${id}`),
-  findById: (id: string) => axios.get(`${API_URL}/servers/${id}`),
 };
 
 export const pluginsApi = {
   search: (query: string) => axios.get(`${API_URL}/plugins/search?q=${query}`),
-  install: (serverId: string, pluginId: string) => axios.post(`${API_URL}/${serverId}/plugins/${pluginId}/install`),
-  uninstall: (serverId: string, pluginId: string) => axios.delete(`${API_URL}/${serverId}/plugins/${pluginId}`),
+  install: (serverId: string, pluginId: string) => 
+    axios.post(`${API_URL}/${serverId}/plugins/${pluginId}/install`),
+  uninstall: (serverId: string, pluginId: string) => 
+    axios.delete(`${API_URL}/${serverId}/plugins/${pluginId}`),
   getInstalled: (serverId: string) => axios.get(`${API_URL}/${serverId}/plugins`),
+};
+
+export const playersApi = {
+  getAll: () => axios.get(`${API_URL}/players`),
+  getByServer: (serverId: string) => axios.get(`${API_URL}/servers/${serverId}/players`),
+  ban: (playerId: string) => axios.post(`${API_URL}/players/${playerId}/ban`),
+  unban: (playerId: string) => axios.post(`${API_URL}/players/${playerId}/unban`),
+  kick: (playerId: string) => axios.post(`${API_URL}/players/${playerId}/kick`),
+  message: (playerId: string, message: string) => 
+    axios.post(`${API_URL}/players/${playerId}/message`, { message }),
+};
+
+export const filesApi = {
+  getServerFiles: (serverId: string, path?: string) => 
+    axios.get(`${API_URL}/servers/${serverId}/files${path ? `?path=${path}` : ''}`),
+  downloadFile: (serverId: string, filePath: string) => 
+    axios.get(`${API_URL}/servers/${serverId}/files/download?path=${filePath}`, {
+      responseType: 'blob'
+    }),
+  uploadFile: (serverId: string, file: File, path?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (path) formData.append('path', path);
+    return axios.post(`${API_URL}/servers/${serverId}/files/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  deleteFile: (serverId: string, filePath: string) => 
+    axios.delete(`${API_URL}/servers/${serverId}/files?path=${filePath}`),
+  createFolder: (serverId: string, folderPath: string) => 
+    axios.post(`${API_URL}/servers/${serverId}/files/folder`, { path: folderPath }),
 };
 
 export const backupsApi = {
   getAll: () => axios.get(`${API_URL}/backups`),
   create: (serverId: string) => axios.post(`${API_URL}/backups`, { serverId }),
   restore: (backupId: string) => axios.post(`${API_URL}/backups/${backupId}/restore`),
-  download: (backupId: string) => axios.get(`${API_URL}/backups/${backupId}/download`, { responseType: 'blob' }),
+  download: (backupId: string) => 
+    axios.get(`${API_URL}/backups/${backupId}/download`, { responseType: 'blob' }),
   delete: (backupId: string) => axios.delete(`${API_URL}/backups/${backupId}`),
+};
+
+export const metricsApi = {
+  getServerMetrics: (serverId: string, timeRange?: string) => 
+    axios.get(`${API_URL}/servers/${serverId}/metrics${timeRange ? `?range=${timeRange}` : ''}`),
+  getOverallMetrics: (timeRange?: string) => 
+    axios.get(`${API_URL}/metrics${timeRange ? `?range=${timeRange}` : ''}`),
 };

@@ -8,41 +8,38 @@ import { formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
 interface PlayersListProps {
-  serverId: string;
+  serverId?: string;
 }
 
 export default function PlayersList({ serverId }: PlayersListProps) {
   const queryClient = useQueryClient();
 
-  const { data: players, refetch } = useQuery({
+  const { data: players, isLoading } = useQuery({
     queryKey: ['players', serverId],
-    queryFn: () => playersApi.getAll(serverId),
+    queryFn: () =>
+      serverId ? playersApi.getByServer(serverId) : playersApi.getAll(),
     refetchInterval: 10000,
   });
 
-  const kickMutation = useMutation({
-    mutationFn: (playerName: string) => playersApi.kick(serverId, playerName),
-    onSuccess: () => {
-      toast.success('Player kicked');
-      queryClient.invalidateQueries({ queryKey: ['players', serverId] });
-    },
-  });
-
   const banMutation = useMutation({
-    mutationFn: (playerName: string) => playersApi.ban(serverId, playerName),
+    mutationFn: (playerId: string) => playersApi.ban(playerId),
     onSuccess: () => {
-      toast.success('Player banned');
-      queryClient.invalidateQueries({ queryKey: ['players', serverId] });
+      toast.success('Player banned successfully');
+      queryClient.invalidateQueries({ queryKey: ['players'] });
     },
+    onError: () => toast.error('Failed to ban player'),
   });
 
-  const pardonMutation = useMutation({
-    mutationFn: (playerName: string) => playersApi.pardon(serverId, playerName),
+  const kickMutation = useMutation({
+    mutationFn: (playerId: string) => playersApi.kick(playerId),
     onSuccess: () => {
-      toast.success('Ban removed');
-      queryClient.invalidateQueries({ queryKey: ['players', serverId] });
+      toast.success('Player kicked successfully');
+      queryClient.invalidateQueries({ queryKey: ['players'] });
     },
+    onError: () => toast.error('Failed to kick player'),
   });
+
+  const playerList = players?.data || [];
 
   return (
     <Card>
@@ -56,40 +53,39 @@ export default function PlayersList({ serverId }: PlayersListProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {players?.data?.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : playerList.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              No players found
+              No players online
             </p>
           ) : (
-            players?.data?.map((player: any) => (
+            playerList.map((player: any) => (
               <div
                 key={player.id}
-                className="glass-panel p-4 flex items-center justify-between"
+                className="flex items-center justify-between p-4 border rounded-lg"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                    {player.name[0]}
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm">
+                    {player.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold">{player.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {player.isOnline ? (
-                        <Badge className="bg-green-500/20 text-green-400 border-green-500/50">
-                          Online
-                        </Badge>
-                      ) : (
-                        <span>Last seen: {formatDate(player.lastSeen)}</span>
-                      )}
+                    <h4 className="font-medium">{player.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {player.status === 'online'
+                        ? 'Online'
+                        : `Last seen: ${formatDate(player.lastSeen)}`}
                     </p>
                   </div>
                 </div>
-
                 <div className="flex gap-2">
                   {player.isOnline && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => kickMutation.mutate(player.name)}
+                      onClick={() => kickMutation.mutate(player.id)}
                     >
                       <UserX className="w-4 h-4" />
                     </Button>
@@ -97,7 +93,7 @@ export default function PlayersList({ serverId }: PlayersListProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => banMutation.mutate(player.name)}
+                    onClick={() => banMutation.mutate(player.id)}
                   >
                     <Ban className="w-4 h-4 text-red-400" />
                   </Button>

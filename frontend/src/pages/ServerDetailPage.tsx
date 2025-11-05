@@ -14,23 +14,30 @@ import { getStatusBadgeClass } from '@/lib/utils';
 
 export default function ServerDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-
+  
   const { data: server, isLoading } = useQuery({
     queryKey: ['server', id],
-    queryFn: () => serversApi.getOne(id!),
-    refetchInterval: 5000,
+    queryFn: () => serversApi.findById(id!),
+    enabled: !!id,
   });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="glass-panel p-8 animate-pulse">Loading...</div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  const serverData = server?.data;
+  if (!server?.data) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-muted-foreground">Server not found</p>
+      </div>
+    );
+  }
+
+  const serverData = server.data;
 
   return (
     <div className="space-y-6">

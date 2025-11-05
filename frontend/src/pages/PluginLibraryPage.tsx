@@ -1,16 +1,15 @@
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Download, Star, Eye, Package } from 'lucide-react';
+import { serversApi, pluginsApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { loadSatoshiFont } from '@/components/ui/typography';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
-import { serversApi } from '@/lib/apis/servers';
-import { pluginsApi } from '@/lib/apis/plugins';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { loadSatoshiFont } from '@/components/ui/typography';
+import toast from 'react-hot-toast';
 
 export default function PluginLibraryPage() {
   loadSatoshiFont();

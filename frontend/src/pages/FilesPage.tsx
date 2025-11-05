@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { filesApi, serversApi } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,20 +23,21 @@ import {
 
 export default function FilesPage() {
   const { serverId } = useParams<{ serverId: string }>();
-  const navigate = useNavigate();
-  const [currentDir, setCurrentDir] = useState('');
+  const [currentPath, setCurrentPath] = useState('/');
   const [editingFile, setEditingFile] = useState<any>(null);
   const [fileContent, setFileContent] = useState('');
   const queryClient = useQueryClient();
 
-  const { data: server } = useQuery({
+  const { data: serverResponse, isLoading: serverLoading } = useQuery({
     queryKey: ['server', serverId],
-    queryFn: () => serversApi.getOne(serverId!),
+    queryFn: () => serversApi.findById(serverId!),
+    enabled: !!serverId,
   });
 
-  const { data: files } = useQuery({
-    queryKey: ['files', serverId, currentDir],
-    queryFn: () => filesApi.list(serverId!, currentDir),
+  const { data: filesResponse, isLoading: filesLoading } = useQuery({
+    queryKey: ['files', serverId, currentPath],
+    queryFn: () => filesApi.getServerFiles(serverId!, currentPath),
+    enabled: !!serverId,
   });
 
   const readFileMutation = useMutation({
@@ -70,21 +70,32 @@ export default function FilesPage() {
 
   const handleFileClick = (file: any) => {
     if (file.isDirectory) {
-      setCurrentDir(file.path);
+      setCurrentPath(file.path);
     } else if (file.name.endsWith('.properties') || file.name.endsWith('.yml') || file.name.endsWith('.json') || file.name.endsWith('.txt')) {
       readFileMutation.mutate(file.path);
     }
   };
 
   const handleBack = () => {
-    const parts = currentDir.split('/').filter(Boolean);
+    const parts = currentPath.split('/').filter(Boolean);
     parts.pop();
-    setCurrentDir(parts.join('/'));
+    setCurrentPath(parts.join('/'));
   };
+
+  if (serverLoading || filesLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const server = serverResponse?.data;
+  const files = filesResponse?.data || [];
 
   return (
     <div className="space-y-6">
-      <motion.div
+      <div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -103,15 +114,15 @@ export default function FilesPage() {
             </p>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="font-mono text-sm">
-              /{currentDir || 'root'}
+              /{currentPath || 'root'}
             </CardTitle>
-            {currentDir && (
+            {currentPath && (
               <Button variant="ghost" size="sm" onClick={handleBack}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
@@ -170,7 +181,7 @@ export default function FilesPage() {
                   </div>
                 </div>
               ))
-            )}
+            }
           </div>
         </CardContent>
       </Card>
