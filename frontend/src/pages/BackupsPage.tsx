@@ -55,7 +55,7 @@ export default function BackupsPage() {
 
   const restoreMutation = useMutation({
     mutationFn: ({ backupId, serverId }: { backupId: string; serverId: string }) => 
-      backupsApi.restore(backupId, serverId),
+      backupsApi.restore(backupId),
     onSuccess: () => {
       toast.success('Backup restored successfully!');
       queryClient.invalidateQueries({ queryKey: ['servers'] });
