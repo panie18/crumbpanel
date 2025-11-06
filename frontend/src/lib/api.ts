@@ -1,10 +1,12 @@
 import axios from 'axios';
 
 export const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5829/api'
-  : '/api';
+  ? 'http://localhost:5829'
+  : window.location.port === '8437'
+    ? `http://${window.location.hostname}:5829`
+    : '';
 
-// Configure axios defaults
+// Configure axios defaults - NO /api here!
 axios.defaults.baseURL = API_URL;
 
 // Add auth token to all requests
@@ -35,16 +37,16 @@ axios.interceptors.response.use(
 export default axios;
 
 export const serversApi = {
-  getAll: () => axios.get(`${API_URL}/servers`),
-  getOne: (id: string) => axios.get(`${API_URL}/servers/${id}`),
-  findById: (id: string) => axios.get(`${API_URL}/servers/${id}`),
-  create: (data: any) => axios.post(`${API_URL}/servers`, data),
-  start: (id: string) => axios.post(`${API_URL}/servers/${id}/start`),
-  stop: (id: string) => axios.post(`${API_URL}/servers/${id}/stop`),
-  restart: (id: string) => axios.post(`${API_URL}/servers/${id}/restart`),
-  delete: (id: string) => axios.delete(`${API_URL}/servers/${id}`),
-  sendCommand: (id: string, command: string) => axios.post(`${API_URL}/servers/${id}/command`, { command }),
-  getLogs: (id: string) => axios.get(`${API_URL}/servers/${id}/logs`),
+  getAll: () => axios.get('/api/servers'),
+  getOne: (id: string) => axios.get(`/api/servers/${id}`),
+  findById: (id: string) => axios.get(`/api/servers/${id}`),
+  create: (data: any) => axios.post('/api/servers', data),
+  start: (id: string) => axios.post(`/api/servers/${id}/start`),
+  stop: (id: string) => axios.post(`/api/servers/${id}/stop`),
+  restart: (id: string) => axios.post(`/api/servers/${id}/restart`),
+  delete: (id: string) => axios.delete(`/api/servers/${id}`),
+  sendCommand: (id: string, command: string) => axios.post(`/api/servers/${id}/command`, { command }),
+  getLogs: (id: string) => axios.get(`/api/servers/${id}/logs`),
 };
 
 export const pluginsApi = {
@@ -104,8 +106,8 @@ export const metricsApi = {
 };
 
 export const versionsApi = {
-  getLatest: () => axios.get(`${API_URL}/servers/versions/latest`),
-  getAll: () => axios.get(`${API_URL}/servers/versions/all`),
+  getLatest: () => axios.get('/api/servers/versions/latest'),
+  getAll: () => axios.get('/api/servers/versions/all'),
   search: (query: string, type?: string) => 
-    axios.get(`${API_URL}/servers/versions/search?q=${query}${type ? `&type=${type}` : ''}`),
+    axios.get(`/api/servers/versions/search?q=${query}${type ? `&type=${type}` : ''}`),
 };

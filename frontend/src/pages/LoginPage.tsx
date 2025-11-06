@@ -12,12 +12,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import toast from 'react-hot-toast';
 import { Server, Shield, Lock } from 'lucide-react';
 
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5829/api'
-  : window.location.port === '8437'
-    ? `http://${window.location.hostname}:5829/api`
-    : '/api';
-
 export default function LoginPage() {
   const [credentials, setCredentials] = useState({ email: '', password: '', totpToken: '' });
   const [showTotpInput, setShowTotpInput] = useState(false);
@@ -39,21 +33,12 @@ export default function LoginPage() {
     queryKey: ['setup-status'],
     queryFn: async () => {
       try {
-        console.log('🔍 Checking setup status at:', `${API_URL}/auth/setup-status`);
-        const response = await axios.get(`${API_URL}/auth/setup-status`, {
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        });
+        console.log('🔍 Checking setup status...');
+        const response = await axios.get('/api/auth/setup-status');
         console.log('✅ Setup Status:', response.data);
         return response.data;
       } catch (err: any) {
-        console.error('❌ Setup check failed:', {
-          message: err.message,
-          status: err.response?.status,
-          url: `${API_URL}/auth/setup-status`,
-        });
+        console.error('❌ Setup check failed:', err);
         throw err;
       }
     },
@@ -71,7 +56,7 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: async (creds: { email: string; password: string; totpToken?: string }) => {
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const response = await axios.post('/api/auth/login', {
         email: creds.email,
         password: creds.password,
         ...(creds.totpToken && { totpToken: creds.totpToken })

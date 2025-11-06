@@ -61,25 +61,12 @@ export default function SetupPage() {
 	}, [setupStatus, navigate]);
 
 	const setupMutation = useMutation({
-		mutationFn: async (data: any) => {
-			console.log('🚀 [FRONTEND] Starting setup request...');
-			console.log('🚀 [FRONTEND] API URL:', `${API_URL}/auth/setup`);
-			console.log('🚀 [FRONTEND] Setup data:', { username: data.username, email: data.email });
-
-			try {
-				const response = await axios.post(`${API_URL}/auth/setup`, data, {
-					timeout: 10000,
-					headers: { 'Content-Type': 'application/json' },
-				});
-				console.log('✅ [FRONTEND] Setup response:', response.data);
-				return response;
-			} catch (error) {
-				console.error('❌ [FRONTEND] Setup request failed:', error);
-				console.error('❌ [FRONTEND] Error response:', error.response?.data);
-				console.error('❌ [FRONTEND] Error status:', error.response?.status);
-				throw error;
-			}
-		},
+    mutationFn: async (data: any) => {
+      console.log('🔧 [SETUP] Sending setup request:', data);
+      const response = await axios.post('/api/auth/setup', data);
+      console.log('✅ [SETUP] Response:', response.data);
+      return response;
+    },
 		onSuccess: (response) => {
 			console.log('✅ Setup complete:', response.data);
 			const { user, token } = response.data;
