@@ -3,13 +3,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AutomationController } from './automation.controller';
 import { AutomationService } from './automation.service';
 import { AutomationRule } from '../entities/automation-rule.entity';
-import { ServersModule } from '../servers/servers.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([AutomationRule]),
-    ServersModule,
-  ],
+  imports: [TypeOrmModule.forFeature([AutomationRule])],
   controllers: [AutomationController],
   providers: [AutomationService],
   exports: [AutomationService],

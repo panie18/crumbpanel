@@ -13,6 +13,8 @@ import BackupsPage from '@/pages/BackupsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
 import AutomationPage from '@/pages/AutomationPage';
+import BasesMapPage from '@/pages/BasesMapPage';
+import LeaderboardsPage from '@/pages/LeaderboardsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,6 +56,8 @@ function App() {
             <Route path="servers" element={<ServersPage />} />
             <Route path="servers/:id" element={<ServerDetailPage />} />
             <Route path="players" element={<PlayersPage />} />
+            <Route path="bases" element={<BasesMapPage />} />
+            <Route path="leaderboards" element={<LeaderboardsPage />} />
             <Route path="plugins" element={<PluginLibraryPage />} />
             <Route path="backups" element={<BackupsPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
