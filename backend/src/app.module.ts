@@ -4,9 +4,6 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ServersModule } from './servers/servers.module';
 import { PluginsModule } from './plugins/plugins.module';
-import { BasesModule } from './bases/bases.module';
-import { LeaderboardsModule } from './leaderboards/leaderboards.module';
-import { AutomationModule } from './automation/automation.module';
 
 @Module({
   imports: [
@@ -19,9 +16,10 @@ import { AutomationModule } from './automation/automation.module';
     AuthModule,
     ServersModule,
     PluginsModule,
-    BasesModule,
-    LeaderboardsModule,
-    AutomationModule,
+    // TODO: Add these when files are created:
+    // BasesModule,
+    // LeaderboardsModule,
+    // AutomationModule,
   ],
 })
 export class AppModule {}
