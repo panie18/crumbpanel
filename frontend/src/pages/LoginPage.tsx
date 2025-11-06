@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -8,10 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from '@/components/ui/input-otp';
 import ThemeToggle from '@/components/ThemeToggle';
 import toast from 'react-hot-toast';
-import { Server, Eye, EyeOff, Loader2, LogIn, Shield, Lock } from 'lucide-react';
+import { Server, Shield, Lock } from 'lucide-react';
 
 const API_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:5829/api'
@@ -19,66 +18,37 @@ const API_URL = window.location.hostname === 'localhost'
 
 export default function LoginPage() {
   const [credentials, setCredentials] = useState({ email: '', password: '', totpToken: '' });
-  const [showPassword, setShowPassword] = useState(false);
   const [showTotpInput, setShowTotpInput] = useState(false);
   const navigate = useNavigate();
-  const { setAuth, isAuthenticated } = useAuthStore();
+  const { setAuth } = useAuthStore();
 
-  // Check if setup is needed first
+  // Check setup status only once
   const { data: setupStatus, isLoading: isCheckingSetup } = useQuery({
     queryKey: ['setup-status'],
     queryFn: async () => {
-      try {
-        console.log('🔍 [LOGIN] Checking setup status...');
-        const response = await axios.get(`${API_URL}/auth/setup-status`);
-        console.log('✅ [LOGIN] Setup status:', response.data);
-        return response.data;
-      } catch (error) {
-        console.error('❌ [LOGIN] Setup status failed:', error);
-        return { needsSetup: true };
-      }
+      const response = await axios.get(`${API_URL}/auth/setup-status`);
+      return response.data;
     },
+    retry: false,
+    refetchOnWindowFocus: false,
   });
-
-  useEffect(() => {
-    console.log('🔄 [LOGIN] Setup status changed:', setupStatus);
-    if (setupStatus?.needsSetup) {
-      console.log('↩️ [LOGIN] Redirecting to setup...');
-      navigate('/setup', { replace: true });
-    }
-  }, [setupStatus, navigate]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('↩️ [LOGIN] User authenticated, redirecting to dashboard...');
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
 
   const loginMutation = useMutation({
     mutationFn: async (creds: { email: string; password: string; totpToken?: string }) => {
-      const API_URL = window.location.hostname === 'localhost' 
-        ? 'http://localhost:5829/api'
-        : '/api';
-
       const response = await axios.post(`${API_URL}/auth/login`, {
         email: creds.email,
         password: creds.password,
         ...(creds.totpToken && { totpToken: creds.totpToken })
       });
-
       return response;
     },
     onSuccess: (response) => {
-      console.log('✅ Login successful:', response.data);
       const { user, token } = response.data;
       setAuth(user, token);
       toast.success('Login erfolgreich!');
-      navigate('/');
+      navigate('/', { replace: true });
     },
     onError: (error: any) => {
-      console.error('❌ Login failed:', error);
-      
       if (error.response?.status === 403 && error.response?.data?.requiresTotp) {
         setShowTotpInput(true);
         toast.error('Bitte 2FA-Code eingeben');
@@ -98,74 +68,19 @@ export default function LoginPage() {
     });
   };
 
-  const handleFIDO2Login = async () => {
-    try {
-      console.log('🔐 [FIDO2] Starting FIDO2 authentication...');
-      
-      // Check if WebAuthn is supported
-      if (!window.PublicKeyCredential) {
-        toast.error('FIDO2/WebAuthn not supported in this browser');
-        return;
-      }
-
-      // Get challenge from server
-      const challengeResponse = await axios.post(`${API_URL}/auth/fido2/challenge`, { email: credentials.email });
-      const { challenge, allowCredentials } = challengeResponse.data;
-
-      // Start WebAuthn ceremony
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array(challenge),
-          allowCredentials: allowCredentials.map((cred: any) => ({
-            id: new Uint8Array(cred.id),
-            type: 'public-key'
-          })),
-          timeout: 60000,
-          userVerification: 'required'
-        }
-      }) as PublicKeyCredential;
-
-      if (credential && credential.rawId) {
-        // Send credential to server for verification
-        const loginResponse = await axios.post(`${API_URL}/auth/fido2/verify`, {
-          email: credentials.email,
-          credentialId: Array.from(new Uint8Array(credential.rawId)),
-          authenticatorData: Array.from(new Uint8Array((credential.response as any).authenticatorData)),
-          signature: Array.from(new Uint8Array((credential.response as any).signature))
-        });
-
-        const { user, token } = loginResponse.data;
-        setAuth(user, token);
-        toast.success('FIDO2 login successful! 🎉');
-        navigate('/');
-      }
-    } catch (error: any) {
-      console.error('❌ [FIDO2] Authentication failed:', error);
-      toast.error('FIDO2 authentication failed');
-    }
-  };
-
-  console.log('🎨 [LOGIN] Rendering with setup status:', setupStatus);
+  // Redirect to setup if needed
+  if (setupStatus?.needsSetup) {
+    navigate('/setup', { replace: true });
+    return null;
+  }
 
   if (isCheckingSetup) {
-    console.log('⏳ [LOGIN] Showing loading state...');
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
-
-  if (setupStatus?.needsSetup) {
-    console.log('🚫 [LOGIN] Setup needed, should redirect...');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Redirecting to setup...</p>
-      </div>
-    );
-  }
-
-  console.log('✅ [LOGIN] Rendering login form...');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-background p-4">
@@ -208,12 +123,7 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Passwort</Label>
-                  <a href="/forgot-password" className="text-sm text-primary hover:underline">
-                    Vergessen?
-                  </a>
-                </div>
+                <Label htmlFor="password">Passwort</Label>
                 <Input
                   id="password"
                   type="password"
@@ -233,7 +143,7 @@ export default function LoginPage() {
                     value={credentials.totpToken}
                     onChange={(e) => setCredentials({ ...credentials, totpToken: e.target.value })}
                     maxLength={6}
-                    required={showTotpInput}
+                    required
                   />
                 </div>
               )}
@@ -256,39 +166,6 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or</span>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full mt-4"
-                onClick={handleFIDO2Login}
-              >
-                <Shield className="mr-2 w-4 h-4" />
-                Sign in with FIDO2/Passkey
-              </Button>
-            </div>
-
-            <p className="text-center text-xs text-muted-foreground mt-6">
-              Made by{' '}
-              <a
-                href="https://paulify.eu"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground hover:text-primary"
-              >
-                paulify.dev
-              </a>
-            </p>
           </CardContent>
         </Card>
       </motion.div>
