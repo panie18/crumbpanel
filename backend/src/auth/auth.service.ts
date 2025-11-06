@@ -61,8 +61,7 @@ export class AuthService {
       console.log('🔍 [AUTH] Current user count:', userCount);
 
       if (userCount > 0) {
-        console.log('❌ [AUTH] Setup already completed');
-        // Don't throw error, just return existing user info
+        console.log('❌ [AUTH] Setup already completed - returning existing user');
         const existingUser = await this.userRepository.findOne({ 
           where: {}, 
           order: { createdAt: 'ASC' } 
@@ -74,7 +73,8 @@ export class AuthService {
             email: existingUser.email,
           });
           
-          return {
+          // WICHTIG: Korrekte Response-Struktur
+          const response = {
             message: 'Setup was already completed, logging you in',
             user: {
               id: existingUser.id,
@@ -84,9 +84,10 @@ export class AuthService {
             },
             token,
           };
+          
+          console.log('✅ [AUTH] Returning existing user response:', response);
+          return response;
         }
-        
-        throw new Error('Setup already completed but no user found');
       }
 
       // Hash password
@@ -113,8 +114,8 @@ export class AuthService {
       });
       console.log('✅ [AUTH] JWT token generated');
 
-      console.log('🎉 [AUTH] Setup completed successfully');
-      return {
+      // WICHTIG: Korrekte Response-Struktur
+      const response = {
         message: 'Setup completed successfully',
         user: {
           id: savedUser.id,
@@ -125,13 +126,11 @@ export class AuthService {
         token,
       };
 
+      console.log('🎉 [AUTH] Setup completed successfully with response:', response);
+      return response;
+
     } catch (error) {
       console.error('💥 [AUTH] Setup failed with error:', error);
-      console.error('💥 [AUTH] Error name:', error.name);
-      console.error('💥 [AUTH] Error message:', error.message);
-      console.error('💥 [AUTH] Error stack:', error.stack);
-      
-      // Don't wrap in another error
       throw error;
     }
   }

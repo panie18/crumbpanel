@@ -64,27 +64,45 @@ export default function SetupPage() {
     mutationFn: async (data: any) => {
       console.log('🔧 [SETUP] Sending setup request:', data);
       const response = await axios.post('/api/auth/setup', data);
-      console.log('✅ [SETUP] Response:', response.data);
+      console.log('✅ [SETUP] Raw response:', response);
+      console.log('✅ [SETUP] Response data:', response.data);
       return response;
     },
     onSuccess: (response) => {
-      console.log('✅ [SETUP] Setup complete:', response.data);
+      console.log('✅ [SETUP] Setup success handler called');
+      console.log('✅ [SETUP] Response data structure:', {
+        hasData: !!response.data,
+        hasUser: !!response.data?.user,
+        hasToken: !!response.data?.token,
+        user: response.data?.user,
+        tokenPreview: response.data?.token?.substring(0, 20) + '...'
+      });
       
-      // Handle both new setup and existing setup
-      if (response.data.user && response.data.token) {
-        const { user, token } = response.data;
-        setAuth(user, token);
-        toast.success(response.data.message || 'Setup completed successfully! 🎉');
-        
-        setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 500);
-      } else {
-        toast.error('Setup response invalid');
+      // Validate response structure
+      if (!response.data || !response.data.user || !response.data.token) {
+        console.error('❌ [SETUP] Invalid response structure:', response.data);
+        toast.error('Setup response invalid - missing user or token');
+        return;
       }
+
+      const { user, token, message } = response.data;
+      
+      // Set authentication
+      console.log('🔐 [SETUP] Setting authentication...');
+      setAuth(user, token);
+      
+      // Show success message
+      toast.success(message || 'Setup completed successfully! 🎉');
+      
+      // Navigate to dashboard
+      setTimeout(() => {
+        console.log('🔀 [SETUP] Navigating to dashboard...');
+        navigate('/', { replace: true });
+      }, 500);
     },
     onError: (error: any) => {
-      console.error('❌ [SETUP] Failed:', error);
+      console.error('❌ [SETUP] Setup failed:', error);
+      console.error('❌ [SETUP] Error response:', error.response?.data);
       
       if (error.response?.status === 409) {
         toast.error('Setup already completed. Redirecting to login...');
