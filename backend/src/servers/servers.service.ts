@@ -142,4 +142,61 @@ export class ServersService {
     }
     return { success: false, error: 'Server not running' };
   }
+
+  async getAll() {
+    return this.getAllServers();
+  }
+
+  async findById(id: string) {
+    return this.getServerById(id);
+  }
+
+  async create(serverData: CreateServerDto) {
+    return this.createServer(serverData);
+  }
+
+  async restartServer(id: string) {
+    await this.stopServer(id);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await this.startServer(id);
+  }
+
+  async getServerLogs(id: string) {
+    const logs = await this.getLogs(id);
+    return { logs: logs.join('') };
+  }
+
+  async getServerFiles(id: string) {
+    const server = await this.getServerById(id);
+    if (!server) throw new Error('Server not found');
+
+    try {
+      const files = fs.readdirSync(server.serverPath);
+      return files.map(file => {
+        const stats = fs.statSync(path.join(server.serverPath, file));
+        return {
+          name: file,
+          size: stats.size,
+          isDirectory: stats.isDirectory(),
+          modified: stats.mtime
+        };
+      });
+    } catch (error) {
+      console.error('Error reading server files:', error);
+      return [];
+    }
+  }
+
+  async downloadFile(id: string, filePath: string) {
+    const server = await this.getServerById(id);
+    if (!server) throw new Error('Server not found');
+
+    const fullPath = path.join(server.serverPath, filePath);
+    
+    if (!fs.existsSync(fullPath)) {
+      throw new Error('File not found');
+    }
+
+    return fullPath;
+  }
 }
