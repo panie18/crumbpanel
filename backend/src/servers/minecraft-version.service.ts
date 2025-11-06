@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import * as https from 'https';
+import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
-import axios from 'axios';
 
 export interface MinecraftVersion {
   id: string;

@@ -9,7 +9,7 @@ import { PluginsModule } from './plugins/plugins.module';
   imports: [
     JwtModule.register({
       global: true,
-      secret: process.env.JWT_SECRET || 'fallback-secret',
+      secret: process.env.JWT_SECRET || 'crumbpanel-secret-key-change-in-production',
       signOptions: { expiresIn: '7d' },
     }),
     DatabaseModule,

@@ -26,7 +26,7 @@ export class PlayerBase {
   @Column('float')
   z: number;
 
-  @Column({ nullable: true })
+  @Column({ default: 'overworld' })
   dimension: string;
 
   @Column({ nullable: true })

@@ -11,6 +11,7 @@ export class LeaderboardsService {
   ) {}
 
   async getTopPlayers(serverId: string, metric: 'playtime' | 'kills' | 'deaths' | 'joins', limit: number = 10) {
+    // Mock data - will be replaced with real stats later
     const mockData = [
       { rank: 1, username: 'Builder_Pro', value: 245, uuid: 'uuid-1' },
       { rank: 2, username: 'Miner_King', value: 189, uuid: 'uuid-2' },

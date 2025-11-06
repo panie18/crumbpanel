@@ -10,16 +10,16 @@ export class BasesService {
     private baseRepository: Repository<PlayerBase>,
   ) {}
 
-  async getAllBases(serverId: string) {
+  async getAllBases(serverId: string): Promise<PlayerBase[]> {
     return this.baseRepository.find({ where: { serverId } });
   }
 
-  async createBase(data: Partial<PlayerBase>) {
+  async createBase(data: Partial<PlayerBase>): Promise<PlayerBase> {
     const base = this.baseRepository.create(data);
     return this.baseRepository.save(base);
   }
 
-  async deleteBase(id: string) {
+  async deleteBase(id: string): Promise<void> {
     await this.baseRepository.delete(id);
   }
 }
