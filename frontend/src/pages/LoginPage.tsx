@@ -42,21 +42,32 @@ export default function LoginPage() {
       try {
         console.log('🔍 Checking setup status...');
         const response = await axios.get('/api/auth/setup-status');
-        console.log('✅ Setup Status:', response.data);
+        console.log('✅ Setup Status Response:', response.data);
+        
+        // Debug info
+        const { isSetupComplete, needsSetup, userCount } = response.data;
+        console.log('📊 Setup Analysis:', { 
+          isSetupComplete, 
+          needsSetup, 
+          userCount,
+          shouldRedirectToSetup: needsSetup && userCount === 0
+        });
+        
         return response.data;
       } catch (err: any) {
         console.error('❌ Setup check failed:', err);
         throw err;
       }
     },
-    retry: 2,
+    retry: 1,
     refetchOnWindowFocus: false,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Redirect to setup if needed
+  // Redirect to setup if needed (only if NO users exist)
   useEffect(() => {
-    if (setupStatus?.needsSetup) {
-      console.log('🔀 Redirecting to setup...');
+    if (setupStatus?.needsSetup && setupStatus?.userCount === 0) {
+      console.log('🔀 No users found, redirecting to setup...');
       navigate('/setup', { replace: true });
     }
   }, [setupStatus, navigate]);
@@ -127,8 +138,12 @@ export default function LoginPage() {
   }
 
   // Don't render login form if setup is needed
-  if (setupStatus?.needsSetup) {
-    return null;
+  if (setupStatus?.needsSetup && setupStatus?.userCount === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Redirecting to setup...</p>
+      </div>
+    );
   }
 
   return (

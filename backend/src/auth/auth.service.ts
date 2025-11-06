@@ -13,34 +13,41 @@ export class AuthService {
   ) {}
 
   async getSetupStatus() {
+    console.log('📊 [AUTH] Checking setup status...');
+    
     try {
-      console.log('📊 [AUTH] Checking setup status...');
-      console.log('📊 [AUTH] Database connection:', !!this.userRepository);
-      
+      const isConnected = this.dataSource?.isInitialized || false;
+      console.log('📊 [AUTH] Database connection:', isConnected);
+
+      if (!isConnected) {
+        return {
+          isSetupComplete: false,
+          needsSetup: true,
+          userCount: 0
+        };
+      }
+
       const userCount = await this.userRepository.count();
-      console.log(`📊 [AUTH] User count in database: ${userCount}`);
-      
+      console.log('📊 [AUTH] User count in database:', userCount);
+
+      const needsSetup = userCount === 0;
+      const isSetupComplete = userCount > 0;
+
       const result = {
-        isSetupComplete: userCount > 0,
-        needsSetup: userCount === 0,
-        userCount,
+        isSetupComplete,
+        needsSetup,
+        userCount
       };
-      
+
       console.log('📊 [AUTH] Setup status result:', result);
       return result;
+
     } catch (error) {
       console.error('❌ [AUTH] Setup status check failed:', error);
-      console.error('❌ [AUTH] Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
-      
       return {
         isSetupComplete: false,
         needsSetup: true,
-        userCount: 0,
-        error: error.message,
+        userCount: 0
       };
     }
   }

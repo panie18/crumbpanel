@@ -1,8 +1,17 @@
-# 🎮 CrumbPanel
+<div align="center">
+  <img src="assets/logo.png" alt="CrumbPanel Logo" width="200" height="200">
+  
+  # 🎮 CrumbPanel
+  
+  **The Ultimate Minecraft Server Management Panel**
+  
+  [![Docker](https://img.shields.io/badge/Docker-Ready-blue?logo=docker)](https://docker.com)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue?logo=typescript)](https://typescriptlang.org)
+  [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+  [![Made with ❤️](https://img.shields.io/badge/Made%20with-❤️-red.svg)](https://paulify.eu)
 
-A modern, fully functional Minecraft Server Management Panel with Glassmorphism UI, Docker support, and real-time console.
-
-**Made by [paulify.dev](https://paulify.eu) 🚀**
+  *Professional Minecraft server management made simple*
+</div>
 
 ---
 
@@ -55,37 +64,54 @@ docker-compose up -d --build
 
 ## ✨ Features
 
-- 🖥️ **Server Dashboard** - Overview of all Minecraft instances
-- 📊 **Live Monitoring** - CPU, RAM, TPS, player count in real-time
-- 🎮 **Player Management** - Kick, Ban, Whitelist
-- 📁 **File Management** - Upload, Download, Edit
-- 💾 **Backup & Restore** - Automatic and manual backups
-- ☁️ **Cloud Backups** - WebDAV integration (Nextcloud, ownCloud, etc.)
-- 🔐 **Security** - JWT Auth, RBAC, encrypted RCON passwords
-- 🌐 **Multilingual** - English & German
-- 🎨 **Glassmorphism UI** - Modern, animated user interface
+### 🎯 **Core Management**
+- 🚀 **One-Click Server Creation** - Java & Bedrock support
+- 🎮 **Live Server Console** - Real-time logs & command execution  
+- 📊 **Performance Monitoring** - TPS, RAM, CPU tracking
+- 🔄 **Auto-Updates** - Latest Minecraft versions from Mojang API
+- 💾 **Smart Backups** - Automated backup system
+
+### 🗺️ **Advanced Features**
+- 🏡 **Player Base Map** - Interactive world exploration
+- 🏆 **Leaderboards** - Player statistics & competitions
+- ⚡ **Workflow Automation** - Custom triggers & actions
+- 🔌 **Plugin Marketplace** - Browse & install plugins
+- 🌐 **Multi-Server Cluster** - Manage multiple servers
+
+### 🔐 **Security & Auth**
+- 👤 **Multi-User Support** - Role-based access control
+- 🛡️ **2FA Authentication** - TOTP & FIDO2/WebAuthn
+- 🔑 **JWT Security** - Secure API authentication
+- 📱 **Session Management** - Cross-device compatibility
 
 ## 🚀 Quick Start
 
-### Automatic Installation
+### Prerequisites
+- 🐳 **Docker & Docker Compose**
+- 💾 **2GB+ RAM**
+- 💿 **10GB+ Storage**
 
+### 1. Clone Repository
 ```bash
-curl -fsSL https://raw.githubusercontent.com/panie18/crumbpanel/main/install.sh | bash
-```
-
-### Manual Installation
-
-```bash
-# Clone repository
-git clone https://github.com/panie18/crumbpanel.git
+git clone https://github.com/your-username/crumbpanel.git
 cd crumbpanel
-
-# Create .env file (see .env.example)
-cp .env.example .env
-
-# Start Docker containers
-docker-compose up -d --build
 ```
+
+### 2. Start CrumbPanel
+```bash
+docker compose up -d
+```
+
+### 3. Access Panel
+Open your browser and navigate to:
+- Frontend: `http://localhost:8437`
+- Backend API: `http://localhost:5829/api`
+
+**Default login credentials:**
+- Email: `admin@mcpanel.local`
+- Password: `admin123`
+
+⚠️ **Important:** Change the admin password after first login!
 
 ## 📦 Technology Stack
 

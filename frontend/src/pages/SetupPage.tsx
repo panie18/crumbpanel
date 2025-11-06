@@ -41,21 +41,21 @@ export default function SetupPage() {
 	const { setAuth } = useAuthStore();
 	const { setCustomColors } = useThemeStore();
 
-	// Check if setup is needed
+	// Check if setup is already completed
 	const { data: setupStatus } = useQuery({
 		queryKey: ['setup-status'],
 		queryFn: async () => {
-			try {
-				const response = await axios.get(`${API_URL}/auth/setup-status`);
-				return response.data;
-			} catch (error) {
-				return { needsSetup: true };
-			}
+			const response = await axios.get('/api/auth/setup-status');
+			console.log('🔍 [SETUP] Checking status:', response.data);
+			return response.data;
 		},
+		retry: 1,
 	});
 
+	// If setup is already complete, redirect to login
 	useEffect(() => {
-		if (setupStatus?.isSetupComplete === true) {
+		if (setupStatus?.isSetupComplete && setupStatus?.userCount > 0) {
+			console.log('✅ [SETUP] Setup already completed, redirecting to login');
 			navigate('/login', { replace: true });
 		}
 	}, [setupStatus, navigate]);
