@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AutomationRule } from '../entities/automation-rule.entity';
@@ -11,99 +10,44 @@ export class AutomationService {
     private ruleRepository: Repository<AutomationRule>,
   ) {}
 
-  /**
-   * Register automation rule
-   */
-  registerRule(rule: AutomationRule) {
-    this.ruleRepository.save(rule);
-    console.log(`✅ [AUTOMATION] Rule registered: ${rule.name}`);
-  }
-
-  /**
-   * Trigger automation based on event
-   */
-  async triggerEvent(serverId: string, event: string, data: any) {
-    const rules = await this.ruleRepository.find({ where: { serverId, trigger: event, enabled: true } });
-
-    for (const rule of rules) {
-      await this.executeRule(rule, data);
-    }
-  }
-
-  /**
-   * Execute automation rule
-   */
-  private async executeRule(rule: AutomationRule, eventData: any) {
-    console.log(`🤖 [AUTOMATION] Executing rule: ${rule.name}`);
-
-    switch (rule.action) {
-      case 'run_command':
-        if (rule.actionData.command) {
-          console.log(`📝 [AUTOMATION] Running command: ${rule.actionData.command}`);
-          // TODO: Send command to server
-        }
-        break;
-
-      case 'broadcast_message':
-        if (rule.actionData.message) {
-          console.log(`📢 [AUTOMATION] Broadcasting: ${rule.actionData.message}`);
-          // TODO: Broadcast to server
-        }
-        break;
-
-      case 'send_webhook':
-        if (rule.actionData.webhookUrl) {
-          console.log(`🔔 [AUTOMATION] Sending webhook notification`);
-          // TODO: Send webhook
-        }
-        break;
-
-      case 'restart_server':
-        console.log(`🔄 [AUTOMATION] Restarting server`);
-        // TODO: Restart server
-        break;
-    }
-  }
-
-  /**
-   * Example: Auto-restart every 6 hours
-   */
-  @Cron('0 */6 * * *')
-  async scheduledRestart() {
-    const rules = await this.ruleRepository.find({ where: { trigger: 'schedule', action: 'restart_server', enabled: true } });
-
-    for (const rule of rules) {
-      await this.executeRule(rule, {});
-    }
-  }
-
-  async getRules(serverId: string) {
+  async getRules(serverId: string): Promise<AutomationRule[]> {
     return this.ruleRepository.find({ where: { serverId } });
   }
 
-  async createRule(data: any) {
+  async createRule(data: Partial<AutomationRule>): Promise<AutomationRule> {
     const rule = this.ruleRepository.create(data);
     return this.ruleRepository.save(rule);
   }
 
-  async deleteRule(id: string) {
+  async deleteRule(id: string): Promise<void> {
     await this.ruleRepository.delete(id);
-    return { success: true };
   }
 
-  async executeRule(rule: AutomationRule) {
-    console.log('Executing automation rule:', rule.name);
+  async toggleRule(id: string, enabled: boolean): Promise<AutomationRule> {
+    await this.ruleRepository.update(id, { enabled });
+    return this.ruleRepository.findOne({ where: { id } });
+  }
 
-    // Execute based on action type
+  async executeRule(rule: AutomationRule): Promise<void> {
+    if (!rule.enabled) {
+      console.log(`Rule ${rule.name} is disabled, skipping`);
+      return;
+    }
+
+    console.log(`Executing automation rule: ${rule.name}`);
+    
     switch (rule.action) {
       case 'restart_server':
-        console.log('Restarting server...');
+        console.log('Action: Restarting server');
         break;
       case 'send_command':
-        console.log('Sending command...');
+        console.log('Action: Sending command');
         break;
-      case 'backup':
-        console.log('Creating backup...');
+      case 'create_backup':
+        console.log('Action: Creating backup');
+        break;
+      case 'notify':
+        console.log('Action: Sending notification');
         break;
       default:
         console.log('Unknown action:', rule.action);
