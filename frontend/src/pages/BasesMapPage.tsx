@@ -188,7 +188,7 @@ export default function BasesMapPage() {
             Bases Map
           </h2>
           <p className="text-muted-foreground">Track player bases</p>
-        </div
+        </div>
         
         <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
@@ -247,7 +247,9 @@ export default function BasesMapPage() {
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full">Add Base</Button>
+              <Button type="submit" className="w-full">
+                Add Base
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -260,27 +262,33 @@ export default function BasesMapPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {bases.map((base) => (
-                <div key={base.id} className="p-2 border rounded">
-                  <p className="font-semibold text-sm">{base.name}</p>
-                  <p className="text-xs text-muted-foreground">{base.playerName}</p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => deleteBaseMutation.mutate(base.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
+              {bases.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">No bases yet</p>
+              ) : (
+                bases.map((base) => (
+                  <div key={base.id} className="flex items-center justify-between p-2 border rounded">
+                    <div>
+                      <p className="font-semibold text-sm">{base.name}</p>
+                      <p className="text-xs text-muted-foreground">{base.playerName}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => deleteBaseMutation.mutate(base.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card className="md:col-span-3">
           <CardHeader>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <CardTitle>Map</CardTitle>
               <div className="flex gap-2">
                 <Button variant="outline" size="icon" onClick={handleZoomIn}>
