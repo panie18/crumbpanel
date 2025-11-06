@@ -31,9 +31,8 @@ export class ServersController {
   }
 
   @Get(':id/files')
-  async getServerFiles(@Param('id') id: string, @Query('path') path?: string) {
-    console.log('📁 [CONTROLLER] Getting files for server:', id, 'path:', path);
-    return this.serversService.getServerFiles(id, path || '');
+  async getServerFiles(@Param('id') id: string) {
+    return this.serversService.getServerFiles(id);
   }
 
   @Get(':id/files/download')
