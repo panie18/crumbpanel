@@ -22,15 +22,23 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
 
+  console.log('🎨 LoginPage rendering...');
+
   // Check setup status only once
-  const { data: setupStatus, isLoading: isCheckingSetup } = useQuery({
+  const { data: setupStatus, isLoading: isCheckingSetup, error } = useQuery({
     queryKey: ['setup-status'],
     queryFn: async () => {
-      const response = await axios.get(`${API_URL}/auth/setup-status`);
-      console.log('✅ Setup Status:', response.data);
-      return response.data;
+      try {
+        console.log('🔍 Checking setup status...');
+        const response = await axios.get(`${API_URL}/auth/setup-status`);
+        console.log('✅ Setup Status:', response.data);
+        return response.data;
+      } catch (err) {
+        console.error('❌ Setup check failed:', err);
+        throw err;
+      }
     },
-    retry: false,
+    retry: 1,
     refetchOnWindowFocus: false,
   });
 
@@ -81,6 +89,18 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('❌ Error in LoginPage:', error);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <p className="text-red-500">Error loading setup status</p>
+          <p className="text-sm text-muted-foreground mt-2">Check browser console for details</p>
+        </div>
       </div>
     );
   }
