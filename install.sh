@@ -4,31 +4,45 @@ echo "🎮 CRUMBPANEL AUTO INSTALLER"
 echo "============================"
 echo ""
 
-# Check if we're in the right directory
-if [ ! -f "docker-compose.yml" ]; then
-    echo "📁 No docker-compose.yml found. Cloning repository..."
-    
-    # Remove existing directory if it exists
-    if [ -d "crumbpanel" ]; then
-        echo "🗑️ Removing existing crumbpanel directory..."
-        sudo rm -rf crumbpanel/
-    fi
-    
-    # Clone the repository
-    echo "📥 Cloning CrumbPanel repository..."
-    git clone https://github.com/panie18/crumbpanel.git
-    
-    # Change to the cloned directory
-    cd crumbpanel
-    
-    echo "✅ Repository cloned successfully!"
+# Check if git is installed
+if ! command -v git &> /dev/null; then
+    echo "❌ Git not found! Installing git..."
+    sudo apt update && sudo apt install -y git
 fi
 
+# Check if docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "❌ Docker not found! Please install Docker first."
+    exit 1
+fi
+
+# Get current directory
+CURRENT_DIR=$(pwd)
+INSTALL_DIR="$HOME/crumbpanel"
+
+echo "📍 Current directory: $CURRENT_DIR"
+echo "📍 Install directory: $INSTALL_DIR"
 echo ""
+
+# Remove existing crumbpanel directory
+if [ -d "$INSTALL_DIR" ]; then
+    echo "🗑️ Removing existing CrumbPanel installation..."
+    sudo rm -rf "$INSTALL_DIR"
+fi
+
+# Clone the repository
+echo "📥 Cloning CrumbPanel repository..."
+git clone https://github.com/panie18/crumbpanel.git "$INSTALL_DIR"
+
+# Change to the installation directory
+cd "$INSTALL_DIR"
+echo "📁 Changed to: $(pwd)"
+echo ""
+
 echo "🚨 This will DELETE ALL DATA and install fresh!"
 echo ""
 
-# Auto Fresh Install - NO MENU!
+# Auto Fresh Install
 echo "💥 STOPPING CONTAINERS..."
 docker compose down --remove-orphans 2>/dev/null || true
 
@@ -63,13 +77,20 @@ IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║            ✅ FRESH INSTALL COMPLETE! ✅               ║"
-echo "║              ALL DATA WAS DELETED!                     ║"
+echo "║            ✅ INSTALLATION COMPLETE! ✅                ║"
+echo "║         Repository cloned to: $INSTALL_DIR              ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 echo "🌐 ACCESS CRUMBPANEL:"
 echo "   👉 http://$IP:8437"
 echo "   👉 http://localhost:8437"
+echo ""
+echo "📁 FILES LOCATION:"
+echo "   👉 cd $INSTALL_DIR"
+echo ""
+echo "🔧 USEFUL COMMANDS:"
+echo "   👉 cd $INSTALL_DIR && docker compose logs -f"
+echo "   👉 cd $INSTALL_DIR && docker compose restart"
 echo ""
 echo "🎯 NEXT: Complete the setup wizard!"
 echo ""
