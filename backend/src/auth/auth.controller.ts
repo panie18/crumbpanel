@@ -27,23 +27,30 @@ export class AuthController {
   @Post('setup')
   async setup(@Body() setupData: any) {
     try {
-      console.log('🚀 [CONTROLLER] Setup request received');
-      const result = await this.authService.initialSetup(setupData);
-      console.log('✅ [CONTROLLER] Setup successful');
-      return result;
-    } catch (error) {
-      console.error('❌ [CONTROLLER] Setup error:', error.message);
+      console.log('🚀 [CONTROLLER] Setup request received:', setupData);
       
-      // Return proper error response
-      if (error.message?.includes('Setup already completed')) {
-        return {
-          statusCode: 409,
-          message: 'Setup was already completed. Please login instead.',
-          error: 'Conflict'
-        };
+      // Validate input
+      if (!setupData.username || !setupData.email || !setupData.password) {
+        throw new Error('Missing required fields: username, email, password');
       }
       
-      throw error;
+      const result = await this.authService.initialSetup(setupData);
+      console.log('✅ [CONTROLLER] Setup successful, returning:', result);
+      
+      // Ensure we return the correct structure
+      if (!result.user || !result.token) {
+        console.error('❌ [CONTROLLER] Invalid setup result:', result);
+        throw new Error('Setup failed: Invalid response structure');
+      }
+      
+      return result;
+      
+    } catch (error) {
+      console.error('❌ [CONTROLLER] Setup error:', error.message);
+      console.error('❌ [CONTROLLER] Setup error stack:', error.stack);
+      
+      // Don't send internal errors to client
+      throw new Error('Setup failed: ' + error.message);
     }
   }
 

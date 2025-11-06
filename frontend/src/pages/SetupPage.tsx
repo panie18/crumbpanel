@@ -63,32 +63,69 @@ export default function SetupPage() {
 	const setupMutation = useMutation({
     mutationFn: async (data: any) => {
       console.log('🔧 [SETUP] Sending setup request:', data);
-      const response = await axios.post('/api/auth/setup', data);
+      
+      // Validate input before sending
+      if (!data.username || !data.email || !data.password) {
+        throw new Error('Please fill in all required fields');
+      }
+      
+      const response = await axios.post('/api/auth/setup', {
+        username: data.username,
+        email: data.email,
+        password: data.password
+      });
+      
       console.log('✅ [SETUP] Raw response:', response);
       console.log('✅ [SETUP] Response data:', response.data);
+      
       return response;
     },
     onSuccess: (response) => {
       console.log('✅ [SETUP] Setup success handler called');
-      console.log('✅ [SETUP] Response data structure:', {
+      console.log('✅ [SETUP] Full response structure:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
         hasData: !!response.data,
-        hasUser: !!response.data?.user,
-        hasToken: !!response.data?.token,
-        user: response.data?.user,
-        tokenPreview: response.data?.token?.substring(0, 20) + '...'
+        dataKeys: response.data ? Object.keys(response.data) : []
       });
       
-      // Validate response structure
-      if (!response.data || !response.data.user || !response.data.token) {
-        console.error('❌ [SETUP] Invalid response structure:', response.data);
-        toast.error('Setup response invalid - missing user or token');
+      // More detailed validation
+      const data = response.data;
+      
+      if (!data) {
+        console.error('❌ [SETUP] No response data');
+        toast.error('Setup failed: No response data');
+        return;
+      }
+      
+      if (!data.user) {
+        console.error('❌ [SETUP] Missing user in response:', data);
+        toast.error('Setup failed: Missing user data');
+        return;
+      }
+      
+      if (!data.token) {
+        console.error('❌ [SETUP] Missing token in response:', data);
+        toast.error('Setup failed: Missing authentication token');
+        return;
+      }
+      
+      if (!data.user.id || !data.user.email) {
+        console.error('❌ [SETUP] Invalid user structure:', data.user);
+        toast.error('Setup failed: Invalid user data');
         return;
       }
 
-      const { user, token, message } = response.data;
+      const { user, token, message } = data;
+      
+      console.log('✅ [SETUP] Valid response - setting auth with:', {
+        userId: user.id,
+        userEmail: user.email,
+        tokenLength: token.length
+      });
       
       // Set authentication
-      console.log('🔐 [SETUP] Setting authentication...');
       setAuth(user, token);
       
       // Show success message
@@ -102,17 +139,11 @@ export default function SetupPage() {
     },
     onError: (error: any) => {
       console.error('❌ [SETUP] Setup failed:', error);
-      console.error('❌ [SETUP] Error response:', error.response?.data);
+      console.error('❌ [SETUP] Error response data:', error.response?.data);
+      console.error('❌ [SETUP] Error status:', error.response?.status);
       
-      if (error.response?.status === 409) {
-        toast.error('Setup already completed. Redirecting to login...');
-        setTimeout(() => {
-          navigate('/login', { replace: true });
-        }, 1500);
-      } else {
-        const message = error.response?.data?.message || 'Setup fehlgeschlagen';
-        toast.error(message);
-      }
+      const message = error.response?.data?.message || error.message || 'Setup fehlgeschlagen';
+      toast.error(message);
     }
 	});
 
