@@ -1,37 +1,29 @@
 import axios from 'axios';
 
-// Detect if running in Docker or localhost
-const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const API_URL = isLocalhost 
-  ? (import.meta.env.VITE_API_URL || 'http://localhost:5829/api')
+export const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:5829/api'
   : '/api';
 
-console.log('🔗 API URL detected:', API_URL);
+// Configure axios defaults
+axios.defaults.baseURL = API_URL;
 
-// Enhanced auth interceptor
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('🔐 Adding auth token to request:', config.url);
-    } else {
-      console.warn('⚠️ No auth token found for request:', config.url);
-    }
-    return config;
-  },
-  (error) => {
-    console.error('❌ Request interceptor error:', error);
-    return Promise.reject(error);
+// Add auth token to all requests
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
-// Response interceptor for unauthorized errors
+// Handle 401 responses
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.error('🚫 Unauthorized - clearing tokens and redirecting to login');
+      console.log('❌ [API] 401 Unauthorized - clearing auth');
       localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -39,6 +31,8 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export default axios;
 
 export const serversApi = {
   getAll: () => axios.get(`${API_URL}/servers`),

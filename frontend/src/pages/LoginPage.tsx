@@ -20,9 +20,17 @@ export default function LoginPage() {
   const [credentials, setCredentials] = useState({ email: '', password: '', totpToken: '' });
   const [showTotpInput, setShowTotpInput] = useState(false);
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const { setAuth, isAuthenticated, token } = useAuthStore();
 
-  console.log('🎨 LoginPage rendering...');
+  console.log('🎨 LoginPage rendering...', { isAuthenticated, hasToken: !!token });
+
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      console.log('✅ Already authenticated, redirecting to dashboard');
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, token, navigate]);
 
   // Check setup status only once
   const { data: setupStatus, isLoading: isCheckingSetup, error } = useQuery({
@@ -60,10 +68,20 @@ export default function LoginPage() {
       return response;
     },
     onSuccess: (response) => {
+      console.log('✅ [LOGIN] Success:', response.data);
       const { user, token } = response.data;
+      
+      // Set auth FIRST
       setAuth(user, token);
-      toast.success('Login erfolgreich!');
-      navigate('/', { replace: true });
+      
+      // Show success toast
+      toast.success(`Willkommen zurück, ${user.name || user.email}!`);
+      
+      // Navigate after a small delay to ensure state is updated
+      setTimeout(() => {
+        console.log('🔀 [LOGIN] Navigating to dashboard...');
+        navigate('/', { replace: true });
+      }, 100);
     },
     onError: (error: any) => {
       if (error.response?.status === 403 && error.response?.data?.requiresTotp) {
