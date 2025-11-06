@@ -36,7 +36,7 @@ export class Server {
   @Column({ nullable: true })
   serverPath: string;
 
-  @OneToMany(() => Player, player => player.server, { cascade: true })
+  @OneToMany(() => Player, (player) => player.serverId)
   players: Player[];
 
   @CreateDateColumn()

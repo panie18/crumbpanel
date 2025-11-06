@@ -45,7 +45,8 @@
     "qrcode": "^1.5.3",
     "js-yaml": "^4.1.0",
     "@nestjs/schedule": "^4.0.0",
-    "@nestjs/event-emitter": "^2.0.3"
+    "@nestjs/event-emitter": "^2.0.3",
+    "axios": "^1.6.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
