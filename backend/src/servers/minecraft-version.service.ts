@@ -25,9 +25,24 @@ export class MinecraftVersionService {
     };
   }
 
+  async getLatestReleaseVersion(): Promise<string> {
+    const latest = await this.getLatestVersion();
+    return latest.release;
+  }
+
+  async getLatestSnapshotVersion(): Promise<string> {
+    const latest = await this.getLatestVersion();
+    return latest.snapshot;
+  }
+
   async getAllVersions() {
     const manifest = await this.getVersionManifest();
     return manifest.versions;
+  }
+
+  async getReleaseVersions() {
+    const manifest = await this.getVersionManifest();
+    return manifest.versions.filter((v: any) => v.type === 'release');
   }
 
   async searchVersions(query: string, type?: string) {
