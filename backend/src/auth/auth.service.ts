@@ -19,22 +19,12 @@ export class AuthService {
     console.log('📊 [AUTH] Checking setup status...');
     
     try {
-      const isConnected = this.dataSource?.isInitialized || false;
-      console.log('📊 [AUTH] Database connection:', isConnected);
-
-      if (!isConnected) {
-        return {
-          isSetupComplete: false,
-          needsSetup: true,
-          userCount: 0
-        };
-      }
-
       const userCount = await this.userRepository.count();
       console.log('📊 [AUTH] User count in database:', userCount);
 
-      const needsSetup = userCount === 0;
+      // WICHTIG: Wenn User existieren, kein Setup nötig!
       const isSetupComplete = userCount > 0;
+      const needsSetup = userCount === 0;
 
       const result = {
         isSetupComplete,
@@ -47,6 +37,7 @@ export class AuthService {
 
     } catch (error) {
       console.error('❌ [AUTH] Setup status check failed:', error);
+      // Bei Fehler: Setup erlauben
       return {
         isSetupComplete: false,
         needsSetup: true,
