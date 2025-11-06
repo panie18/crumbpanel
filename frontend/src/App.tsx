@@ -2,40 +2,35 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
-
-// Lazy load pages
+import DashboardLayout from '@/components/layouts/DashboardLayout';
 import LoginPage from '@/pages/LoginPage';
 import SetupPage from '@/pages/SetupPage';
-import DashboardLayout from '@/components/layouts/DashboardLayout';
 import ServersPage from '@/pages/ServersPage';
 import ServerDetailPage from '@/pages/ServerDetailPage';
+import PlayersPage from '@/pages/PlayersPage';
+import PluginLibraryPage from '@/pages/PluginLibraryPage';
+import BackupsPage from '@/pages/BackupsPage';
+import SettingsPage from '@/pages/SettingsPage';
+import AnalyticsPage from '@/pages/AnalyticsPage';
+import AutomationPage from '@/pages/AutomationPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       retry: 1,
-      staleTime: 30000,
     },
   },
 });
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, token } = useAuthStore();
-  
-  // Check localStorage too (in case store hasn't hydrated yet)
   const hasToken = token || localStorage.getItem('authToken') || localStorage.getItem('token');
-  const isAuth = isAuthenticated || !!hasToken;
+  const isAuth = isAuthenticated && hasToken;
   
-  console.log('🔒 ProtectedRoute:', { 
-    isAuthenticated, 
-    hasToken: !!hasToken, 
-    isAuth,
-    token: token?.substring(0, 20) + '...'
-  });
+  console.log('🔒 ProtectedRoute check:', { isAuthenticated, hasToken: !!hasToken, isAuth });
   
   if (!isAuth) {
-    console.log('❌ Not authenticated, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
   
@@ -43,17 +38,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  console.log('🎨 App rendering...');
-  
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
           <Route path="/setup" element={<SetupPage />} />
           <Route path="/login" element={<LoginPage />} />
           
-          {/* Protected routes */}
           <Route path="/" element={
             <ProtectedRoute>
               <DashboardLayout />
@@ -62,22 +53,18 @@ function App() {
             <Route index element={<ServersPage />} />
             <Route path="servers" element={<ServersPage />} />
             <Route path="servers/:id" element={<ServerDetailPage />} />
+            <Route path="players" element={<PlayersPage />} />
+            <Route path="plugins" element={<PluginLibraryPage />} />
+            <Route path="backups" element={<BackupsPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="automation" element={<AutomationPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
 
-          {/* Catch all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#333',
-            color: '#fff',
-          },
-        }}
-      />
+      <Toaster position="top-right" />
     </QueryClientProvider>
   );
 }
