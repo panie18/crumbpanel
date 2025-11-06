@@ -23,14 +23,19 @@ const queryClient = new QueryClient({
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, token } = useAuthStore();
   
-  // Check both zustand state and localStorage
+  // Check localStorage too (in case store hasn't hydrated yet)
   const hasToken = token || localStorage.getItem('authToken') || localStorage.getItem('token');
-  const isAuth = isAuthenticated && hasToken;
+  const isAuth = isAuthenticated || !!hasToken;
   
-  console.log('🔒 ProtectedRoute check:', { isAuthenticated, hasToken: !!hasToken, isAuth });
+  console.log('🔒 ProtectedRoute:', { 
+    isAuthenticated, 
+    hasToken: !!hasToken, 
+    isAuth,
+    token: token?.substring(0, 20) + '...'
+  });
   
   if (!isAuth) {
-    console.log('❌ Not authenticated, redirecting to login');
+    console.log('❌ Not authenticated, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
   

@@ -20,12 +20,12 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
       login: (user, token) => {
-        console.log('✅ [AUTH] Login:', user.email);
+        console.log('✅ [AUTH] Login:', user.email, 'Token:', token.substring(0, 20) + '...');
         localStorage.setItem('authToken', token);
         localStorage.setItem('token', token);
         set({ user, token, isAuthenticated: true });
@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, token: null, isAuthenticated: false });
       },
       setAuth: (user, token) => {
-        console.log('🔐 [AUTH] SetAuth:', user.email);
+        console.log('🔐 [AUTH] SetAuth:', user.email, 'Token:', token.substring(0, 20) + '...');
         localStorage.setItem('authToken', token);
         localStorage.setItem('token', token);
         set({ user, token, isAuthenticated: true });
@@ -50,6 +50,13 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        console.log('💾 [AUTH] Rehydrated from storage:', {
+          hasUser: !!state?.user,
+          hasToken: !!state?.token,
+          isAuthenticated: state?.isAuthenticated,
+        });
+      },
     }
   )
 );

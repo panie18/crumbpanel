@@ -67,29 +67,25 @@ export default function SetupPage() {
       console.log('✅ [SETUP] Response:', response.data);
       return response;
     },
-		onSuccess: (response) => {
-			console.log('✅ Setup complete:', response.data);
-			const { user, token } = response.data;
-			setAuth(user, token);
-			toast.success('Setup abgeschlossen!');
-			navigate('/');
-		},
-		onError: (error: any) => {
-			console.error('💥 [FRONTEND] Setup mutation failed:', error);
-
-			let errorMessage = 'Setup failed - Unknown error';
-
-			if (error.response?.data?.message) {
-				errorMessage = `Setup failed: ${error.response.data.message}`;
-			} else if (error.code === 'ECONNABORTED') {
-				errorMessage = 'Setup failed: Request timeout';
-			} else if (error.message === 'Network Error') {
-				errorMessage = 'Setup failed: Cannot connect to backend';
-			}
-
-			console.error('💥 [FRONTEND] Showing error:', errorMessage);
-			toast.error(errorMessage, { duration: 8000 });
-		},
+    onSuccess: (response) => {
+      console.log('✅ [SETUP] Setup complete:', response.data);
+      const { user, token } = response.data;
+      
+      // WICHTIG: Setze Auth SOFORT
+      setAuth(user, token);
+      
+      toast.success('Setup abgeschlossen! Willkommen! 🎉');
+      
+      // Warte kurz, dann navigiere
+      setTimeout(() => {
+        console.log('🔀 [SETUP] Navigating to dashboard...');
+        navigate('/', { replace: true });
+      }, 500);
+    },
+    onError: (error: any) => {
+      console.error('❌ [SETUP] Failed:', error);
+      toast.error(error.response?.data?.message || 'Setup fehlgeschlagen');
+    }
 	});
 
 	const handleNext = () => {

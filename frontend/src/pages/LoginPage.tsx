@@ -18,11 +18,18 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth, isAuthenticated, token } = useAuthStore();
 
-  console.log('🎨 LoginPage rendering...', { isAuthenticated, hasToken: !!token });
+  console.log('🎨 LoginPage rendering...', { 
+    isAuthenticated, 
+    hasToken: !!token,
+    tokenPreview: token?.substring(0, 20) + '...' 
+  });
 
-  // If already authenticated, redirect to dashboard
+  // If already authenticated, redirect immediately
   useEffect(() => {
-    if (isAuthenticated && token) {
+    const hasAuth = isAuthenticated && token;
+    const hasLocalToken = localStorage.getItem('authToken') || localStorage.getItem('token');
+    
+    if (hasAuth || hasLocalToken) {
       console.log('✅ Already authenticated, redirecting to dashboard');
       navigate('/', { replace: true });
     }
