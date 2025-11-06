@@ -358,7 +358,7 @@ export default function BasesMapPage() {
                     </Button>
                   </div>
                 ))
-              )}
+              }
             </div>
           </CardContent>
         </Card>
