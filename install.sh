@@ -1,70 +1,110 @@
 #!/bin/bash
 
-echo "🎮 CRUMBPANEL INSTALLER"
-echo "======================="
-
-while true; do
+# Function to wait for user input
+wait_for_input() {
     echo ""
-    echo "What do you want to do?"
-    echo "1) Fresh Install (delete everything)"
-    echo "2) Show Backend Logs" 
-    echo "3) Show Frontend Logs"
-    echo "4) Restart Services"
-    echo "5) Exit"
+    echo "Press ENTER to continue or CTRL+C to exit..."
+    read
+}
+
+# Function to show menu and get choice
+get_choice() {
+    echo ""
+    echo "🎮 CRUMBPANEL INSTALLER"
+    echo "======================="
+    echo ""
+    echo "1) 🚀 Fresh Install (delete everything)"
+    echo "2) 📋 Show Backend Logs" 
+    echo "3) 📋 Show Frontend Logs"
+    echo "4) 🔄 Restart Services"
+    echo "5) 🛑 Exit"
     echo ""
     
-    # Wait for user input
-    read -p "Choose [1-5]: " choice
+    while true; do
+        echo -n "Choose [1-5]: "
+        read choice
+        
+        case $choice in
+            1|2|3|4|5)
+                return $choice
+                ;;
+            *)
+                echo "❌ Please enter 1, 2, 3, 4, or 5"
+                ;;
+        esac
+    done
+}
+
+# Main loop
+while true; do
+    get_choice
+    choice=$?
     
     case $choice in
         1)
-            echo "💥 DELETING EVERYTHING..."
-            docker compose down --remove-orphans
-            sudo rm -rf data/
-            sudo rm -rf minecraft-servers/
-            docker system prune -f
-            
-            echo "🔨 BUILDING FRESH..."
-            docker compose build --no-cache
-            
-            echo "🚀 STARTING..."
-            docker compose up -d
-            
-            echo "⏳ WAITING..."
-            sleep 30
-            
-            IP=$(hostname -I | awk '{print $1}')
             echo ""
-            echo "✅ DONE! Go to: http://$IP:8437"
+            echo "💥 STARTING FRESH INSTALL..."
+            echo "This will DELETE ALL DATA!"
             echo ""
-            read -p "Press Enter to continue..."
+            echo -n "Are you sure? (y/N): "
+            read confirm
+            
+            if [[ $confirm == "y" || $confirm == "Y" ]]; then
+                echo "🛑 Stopping containers..."
+                docker compose down --remove-orphans
+                
+                echo "🗑️ Deleting data..."
+                sudo rm -rf data/
+                sudo rm -rf minecraft-servers/
+                
+                echo "🧹 Cleaning docker..."
+                docker system prune -f
+                
+                echo "🔨 Building fresh..."
+                docker compose build --no-cache
+                
+                echo "🚀 Starting services..."
+                docker compose up -d
+                
+                echo "⏳ Waiting 30 seconds..."
+                sleep 30
+                
+                IP=$(hostname -I | awk '{print $1}')
+                echo ""
+                echo "✅ INSTALLATION COMPLETE!"
+                echo "🌐 Go to: http://$IP:8437"
+                
+                wait_for_input
+            else
+                echo "❌ Fresh install cancelled"
+                wait_for_input
+            fi
             ;;
         2)
-            echo "📋 BACKEND LOGS:"
-            docker logs mc_backend --tail 100
             echo ""
-            read -p "Press Enter to continue..."
+            echo "📋 BACKEND LOGS (last 100 lines):"
+            echo "================================="
+            docker logs mc_backend --tail 100
+            wait_for_input
             ;;
         3)
-            echo "📋 FRONTEND LOGS:"
-            docker logs mc_frontend --tail 100
             echo ""
-            read -p "Press Enter to continue..."
+            echo "📋 FRONTEND LOGS (last 100 lines):"
+            echo "==================================="
+            docker logs mc_frontend --tail 100
+            wait_for_input
             ;;
         4)
-            echo "🔄 RESTARTING..."
-            docker compose restart
-            echo "✅ RESTARTED!"
             echo ""
-            read -p "Press Enter to continue..."
+            echo "🔄 RESTARTING SERVICES..."
+            docker compose restart
+            echo "✅ Services restarted!"
+            wait_for_input
             ;;
         5)
+            echo ""
             echo "👋 Goodbye!"
             exit 0
-            ;;
-        *)
-            echo "❌ Invalid choice. Please enter 1, 2, 3, 4, or 5."
-            sleep 2
             ;;
     esac
 done
