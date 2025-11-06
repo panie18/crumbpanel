@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="CrumbPanel Logo" width="200" height="200">
+  <img src="assets/logo.png" alt="CrumbPanel Logo" width="200" height="200">
   
   # 🎮 CrumbPanel
   
