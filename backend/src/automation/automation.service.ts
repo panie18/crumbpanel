@@ -1,34 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-
-export interface AutomationRule {
-  id: string;
-  serverId: string;
-  name: string;
-  trigger: 'player_join' | 'player_leave' | 'server_start' | 'tps_low' | 'schedule';
-  condition?: {
-    playerName?: string;
-    tps?: number;
-    cronExpression?: string;
-  };
-  action: 'run_command' | 'send_webhook' | 'restart_server' | 'broadcast_message';
-  actionData: {
-    command?: string;
-    webhookUrl?: string;
-    message?: string;
-  };
-  enabled: boolean;
-}
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AutomationRule } from '../entities/automation-rule.entity';
 
 @Injectable()
 export class AutomationService {
-  private rules = new Map<string, AutomationRule>();
+  constructor(
+    @InjectRepository(AutomationRule)
+    private ruleRepository: Repository<AutomationRule>,
+  ) {}
 
   /**
    * Register automation rule
    */
   registerRule(rule: AutomationRule) {
-    this.rules.set(rule.id, rule);
+    this.ruleRepository.save(rule);
     console.log(`✅ [AUTOMATION] Rule registered: ${rule.name}`);
   }
 
@@ -36,8 +23,7 @@ export class AutomationService {
    * Trigger automation based on event
    */
   async triggerEvent(serverId: string, event: string, data: any) {
-    const rules = Array.from(this.rules.values())
-      .filter(r => r.serverId === serverId && r.trigger === event && r.enabled);
+    const rules = await this.ruleRepository.find({ where: { serverId, trigger: event, enabled: true } });
 
     for (const rule of rules) {
       await this.executeRule(rule, data);
@@ -84,8 +70,7 @@ export class AutomationService {
    */
   @Cron('0 */6 * * *')
   async scheduledRestart() {
-    const rules = Array.from(this.rules.values())
-      .filter(r => r.trigger === 'schedule' && r.action === 'restart_server' && r.enabled);
+    const rules = await this.ruleRepository.find({ where: { trigger: 'schedule', action: 'restart_server', enabled: true } });
 
     for (const rule of rules) {
       await this.executeRule(rule, {});

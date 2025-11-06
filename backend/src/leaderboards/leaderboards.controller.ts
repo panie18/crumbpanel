@@ -15,12 +15,4 @@ export class LeaderboardsController {
   ) {
     return this.leaderboardsService.getTopPlayers(serverId, metric, limit ? parseInt(limit.toString()) : 10);
   }
-
-  @Get(':serverId/player/:uuid')
-  async getPlayerStats(
-    @Param('serverId') serverId: string,
-    @Param('uuid') uuid: string
-  ) {
-    return this.leaderboardsService.getPlayerStats(serverId, uuid);
-  }
 }
