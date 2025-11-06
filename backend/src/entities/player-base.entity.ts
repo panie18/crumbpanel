@@ -1,6 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Player } from './player.entity';
-import { Server } from './server.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 @Entity('player_bases')
 export class PlayerBase {
@@ -8,42 +6,31 @@ export class PlayerBase {
   id: string;
 
   @Column()
-  name: string;
-
-  @Column({ nullable: true })
-  description: string;
-
-  @Column()
-  playerId: string;
-
-  @ManyToOne(() => Player)
-  @JoinColumn({ name: 'playerId' })
-  player: Player;
-
-  @Column()
   serverId: string;
 
-  @ManyToOne(() => Server)
-  @JoinColumn({ name: 'serverId' })
-  server: Server;
+  @Column()
+  playerName: string;
 
   @Column()
-  world: string; // overworld, nether, end
+  playerUuid: string;
 
-  @Column('decimal')
+  @Column()
+  name: string;
+
+  @Column('float')
   x: number;
 
-  @Column('decimal')
+  @Column('float')
   y: number;
 
-  @Column('decimal')
+  @Column('float')
   z: number;
 
   @Column({ nullable: true })
-  screenshotUrl: string;
+  dimension: string;
 
-  @Column({ default: false })
-  isPublic: boolean;
+  @Column({ nullable: true })
+  description: string;
 
   @CreateDateColumn()
   createdAt: Date;

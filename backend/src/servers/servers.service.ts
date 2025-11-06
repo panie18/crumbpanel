@@ -74,34 +74,84 @@ export class ServersService {
     const server = await this.serverRepository.findOne({ where: { id } });
     if (!server) throw new Error('Server not found');
 
+    // Check if already running
+    if (this.serverProcesses.has(id)) {
+      console.log('⚠️ Server already running');
+      return { message: 'Server is already running' };
+    }
+
     await this.serverRepository.update(id, { status: 'STARTING' });
+    this.addLog(id, '[INFO] Starting server...');
 
-    const jarFile = `minecraft-server-${server.version}.jar`;
-    const process = spawn('java', [
-      `-Xmx${server.maxRam}G`,
-      `-Xms${Math.floor(server.maxRam / 2)}G`,
-      '-jar', jarFile,
-      'nogui'
-    ], {
-      cwd: server.serverPath,
-      stdio: ['pipe', 'pipe', 'pipe']
-    });
+    try {
+      const jarFile = `minecraft-server-${server.version}.jar`;
+      const jarPath = path.join(server.serverPath, jarFile);
 
-    this.serverProcesses.set(id, process);
-
-    process.stdout?.on('data', (data) => {
-      const output = data.toString();
-      this.addLog(id, output);
-      
-      if (output.includes('Done (')) {
-        this.serverRepository.update(id, { status: 'RUNNING' });
+      // Check if JAR exists
+      if (!fs.existsSync(jarPath)) {
+        throw new Error(`Server JAR not found: ${jarFile}`);
       }
-    });
 
-    process.on('close', () => {
-      this.serverRepository.update(id, { status: 'STOPPED' });
-      this.serverProcesses.delete(id);
-    });
+      // Start with proper Java flags
+      const process = spawn('java', [
+        `-Xmx${server.maxRam}G`,
+        `-Xms${Math.floor(server.maxRam / 2)}G`,
+        '-XX:+UseG1GC',
+        '-jar', jarFile,
+        'nogui'
+      ], {
+        cwd: server.serverPath,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      this.serverProcesses.set(id, process);
+      console.log('✅ Server process started, PID:', process.pid);
+
+      // Handle stdout
+      process.stdout?.on('data', (data) => {
+        const output = data.toString();
+        this.addLog(id, output);
+        
+        if (output.includes('Done (') || output.includes('For help, type "help"')) {
+          this.serverRepository.update(id, { status: 'RUNNING' });
+          this.addLog(id, '[SUCCESS] Server is now running!');
+          console.log('✅ Server is RUNNING');
+        }
+
+        if (output.includes('Address already in use')) {
+          this.addLog(id, '[ERROR] Port already in use!');
+          this.serverRepository.update(id, { status: 'STOPPED' });
+        }
+      });
+
+      // Handle stderr
+      process.stderr?.on('data', (data) => {
+        const error = data.toString();
+        this.addLog(id, `[ERROR] ${error}`);
+        console.error('Server error:', error);
+      });
+
+      // Handle process exit
+      process.on('close', (code) => {
+        console.log(`Server process exited with code ${code}`);
+        this.addLog(id, `[INFO] Server stopped (exit code: ${code})`);
+        this.serverRepository.update(id, { status: 'STOPPED' });
+        this.serverProcesses.delete(id);
+      });
+
+      process.on('error', (error) => {
+        console.error('Process error:', error);
+        this.addLog(id, `[ERROR] ${error.message}`);
+        this.serverRepository.update(id, { status: 'STOPPED' });
+        this.serverProcesses.delete(id);
+      });
+
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      this.addLog(id, `[ERROR] ${error.message}`);
+      await this.serverRepository.update(id, { status: 'STOPPED' });
+      throw error;
+    }
   }
 
   async stopServer(id: string) {

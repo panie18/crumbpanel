@@ -21,7 +21,7 @@ import {
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
-interface CreateServerDialogProps {
+export interface CreateServerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

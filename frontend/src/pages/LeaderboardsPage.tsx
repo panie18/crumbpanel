@@ -14,7 +14,7 @@ export default function LeaderboardsPage() {
       const response = await axios.get(`/api/leaderboards/server-1/${selectedMetric}`);
       return response.data;
     },
-    refetchInterval: 30000, // Update every 30 seconds
+    refetchInterval: 30000,
   });
 
   const metrics = [

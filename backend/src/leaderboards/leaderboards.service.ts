@@ -11,7 +11,6 @@ export class LeaderboardsService {
   ) {}
 
   async getTopPlayers(serverId: string, metric: 'playtime' | 'kills' | 'deaths' | 'joins', limit: number = 10) {
-    // Mock data for now - will be real when we track player stats
     const mockData = [
       { rank: 1, username: 'Builder_Pro', value: 245, uuid: 'uuid-1' },
       { rank: 2, username: 'Miner_King', value: 189, uuid: 'uuid-2' },
@@ -24,21 +23,6 @@ export class LeaderboardsService {
       metric,
       data: mockData.slice(0, limit),
       lastUpdated: new Date()
-    };
-  }
-
-  async getPlayerStats(serverId: string, playerUuid: string) {
-    return {
-      playtime: 245,
-      kills: 67,
-      deaths: 12,
-      joins: 89,
-      lastSeen: new Date(),
-      rank: {
-        playtime: 1,
-        kills: 3,
-        overall: 2
-      }
     };
   }
 }

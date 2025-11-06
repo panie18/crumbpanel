@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Server } from './server.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('players')
 export class Player {
@@ -7,24 +6,32 @@ export class Player {
   id: string;
 
   @Column()
-  username: string;
-
-  @Column()
   uuid: string;
 
-  @Column({ nullable: true })
-  lastSeen: Date;
-
-  @Column({ default: false })
-  isOnline: boolean;
+  @Column()
+  username: string;
 
   @Column()
   serverId: string;
 
-  @ManyToOne(() => Server, server => server.players, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'serverId' })
-  server: Server;
+  @Column({ default: 0 })
+  playtime: number;
+
+  @Column({ default: 0 })
+  kills: number;
+
+  @Column({ default: 0 })
+  deaths: number;
+
+  @Column({ default: 0 })
+  joins: number;
+
+  @Column({ nullable: true })
+  lastSeen: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  firstJoin: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

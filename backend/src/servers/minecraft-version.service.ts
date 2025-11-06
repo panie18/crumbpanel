@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
+import axios from 'axios';
 
 export interface MinecraftVersion {
   id: string;
@@ -139,6 +140,55 @@ export class MinecraftVersionService {
     console.log(`📦 [VERSIONS] File size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
     
     return jarPath;
+  }
+
+  async downloadServerJar(version: string, targetPath: string): Promise<void> {
+    console.log(`📥 Downloading Minecraft ${version} to ${targetPath}`);
+    
+    try {
+      // Get download URL from Mojang API
+      const versionManifest = await this.getVersionManifest();
+      const versionData = versionManifest.versions.find(v => v.id === version);
+      
+      if (!versionData) {
+        throw new Error(`Version ${version} not found`);
+      }
+
+      // Get version details
+      const versionInfo = await axios.get(versionData.url);
+      const serverUrl = versionInfo.data.downloads?.server?.url;
+
+      if (!serverUrl) {
+        throw new Error(`No server download available for version ${version}`);
+      }
+
+      // Download the JAR
+      const response = await axios.get(serverUrl, {
+        responseType: 'stream',
+        timeout: 300000, // 5 minutes
+        onDownloadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Download progress: ${percentCompleted}%`);
+        }
+      });
+
+      const jarPath = path.join(targetPath, `minecraft-server-${version}.jar`);
+      const writer = fs.createWriteStream(jarPath);
+
+      response.data.pipe(writer);
+
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          console.log('✅ Download complete');
+          resolve();
+        });
+        writer.on('error', reject);
+      });
+
+    } catch (error) {
+      console.error('❌ Download failed:', error);
+      throw new Error(`Failed to download server JAR: ${error.message}`);
+    }
   }
 
   async searchVersions(query: string, type?: 'release' | 'snapshot'): Promise<MinecraftVersion[]> {
