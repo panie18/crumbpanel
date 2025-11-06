@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('users')
 export class User {
@@ -9,23 +9,26 @@ export class User {
   email: string;
 
   @Column()
+  username: string;
+
+  @Column()
   password: string;
-
-  @Column({ nullable: true })
-  name: string;
-
-  @Column({ nullable: true })
-  picture: string;
 
   @Column({ default: 'USER' })
   role: string;
-
-  @CreateDateColumn()
-  createdAt: Date;
 
   @Column({ nullable: true })
   totpSecret: string;
 
   @Column({ default: false })
   totpEnabled: boolean;
+
+  @Column({ nullable: true })
+  profilePicture: string;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
