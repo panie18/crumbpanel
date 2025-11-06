@@ -3,12 +3,34 @@
 echo "🎮 CRUMBPANEL AUTO INSTALLER"
 echo "============================"
 echo ""
+
+# Check if we're in the right directory
+if [ ! -f "docker-compose.yml" ]; then
+    echo "📁 No docker-compose.yml found. Cloning repository..."
+    
+    # Remove existing directory if it exists
+    if [ -d "crumbpanel" ]; then
+        echo "🗑️ Removing existing crumbpanel directory..."
+        sudo rm -rf crumbpanel/
+    fi
+    
+    # Clone the repository
+    echo "📥 Cloning CrumbPanel repository..."
+    git clone https://github.com/panie18/crumbpanel.git
+    
+    # Change to the cloned directory
+    cd crumbpanel
+    
+    echo "✅ Repository cloned successfully!"
+fi
+
+echo ""
 echo "🚨 This will DELETE ALL DATA and install fresh!"
 echo ""
 
 # Auto Fresh Install - NO MENU!
 echo "💥 STOPPING CONTAINERS..."
-docker compose down --remove-orphans 2>/dev/null
+docker compose down --remove-orphans 2>/dev/null || true
 
 echo "🗑️ DELETING ALL DATA..."
 sudo rm -rf data/
