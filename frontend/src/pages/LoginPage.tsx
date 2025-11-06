@@ -44,29 +44,33 @@ export default function LoginPage() {
         const response = await axios.get('/api/auth/setup-status');
         console.log('✅ Setup Status Response:', response.data);
         
-        // Debug info
         const { isSetupComplete, needsSetup, userCount } = response.data;
         console.log('📊 Setup Analysis:', { 
           isSetupComplete, 
           needsSetup, 
           userCount,
-          shouldRedirectToSetup: needsSetup && userCount === 0
+          shouldShowLogin: isSetupComplete || userCount > 0
         });
         
         return response.data;
       } catch (err: any) {
         console.error('❌ Setup check failed:', err);
-        throw err;
+        // Bei Fehler: Erlaube Login (assume Setup ist done)
+        return {
+          isSetupComplete: true,
+          needsSetup: false,
+          userCount: 1
+        };
       }
     },
     retry: 1,
     refetchOnWindowFocus: false,
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 30000,
   });
 
-  // Redirect to setup if needed (only if NO users exist)
+  // Redirect to setup ONLY if explicitly needed
   useEffect(() => {
-    if (setupStatus?.needsSetup && setupStatus?.userCount === 0) {
+    if (setupStatus?.needsSetup === true && setupStatus?.userCount === 0) {
       console.log('🔀 No users found, redirecting to setup...');
       navigate('/setup', { replace: true });
     }
@@ -137,8 +141,101 @@ export default function LoginPage() {
     );
   }
 
-  // Don't render login form if setup is needed
-  if (setupStatus?.needsSetup && setupStatus?.userCount === 0) {
+  // Show login form if setup is complete OR if we have users
+  if (setupStatus?.isSetupComplete || (setupStatus?.userCount && setupStatus?.userCount > 0)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-background p-4">
+        <div className="fixed top-4 right-4">
+          <ThemeToggle />
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <Card>
+            <CardHeader className="text-center space-y-4">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring' }}
+                className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center"
+              >
+                <Server className="w-8 h-8 text-primary-foreground" />
+              </motion.div>
+              <CardTitle className="text-3xl">Welcome back! 👋</CardTitle>
+              <CardDescription>Sign in to CrumbPanel</CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="admin@crumbpanel.local"
+                    value={credentials.email}
+                    onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Passwort</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={credentials.password}
+                    onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                    required
+                  />
+                </div>
+
+                {showTotpInput && (
+                  <div className="space-y-2">
+                    <Label htmlFor="totpToken">2FA-Code</Label>
+                    <Input
+                      id="totpToken"
+                      type="text"
+                      placeholder="123456"
+                      value={credentials.totpToken}
+                      onChange={(e) => setCredentials({ ...credentials, totpToken: e.target.value })}
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4 animate-spin" />
+                      Wird angemeldet...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Anmelden
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Don't render login form ONLY if we're sure setup is needed
+  if (setupStatus?.needsSetup === true && setupStatus?.userCount === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Redirecting to setup...</p>
@@ -146,93 +243,5 @@ export default function LoginPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 to-background p-4">
-      <div className="fixed top-4 right-4">
-        <ThemeToggle />
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
-      >
-        <Card>
-          <CardHeader className="text-center space-y-4">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring' }}
-              className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center"
-            >
-              <Server className="w-8 h-8 text-primary-foreground" />
-            </motion.div>
-            <CardTitle className="text-3xl">Welcome back! 👋</CardTitle>
-            <CardDescription>Sign in to CrumbPanel</CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@crumbpanel.local"
-                  value={credentials.email}
-                  onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Passwort</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={credentials.password}
-                  onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
-                  required
-                />
-              </div>
-
-              {showTotpInput && (
-                <div className="space-y-2">
-                  <Label htmlFor="totpToken">2FA-Code</Label>
-                  <Input
-                    id="totpToken"
-                    type="text"
-                    placeholder="123456"
-                    value={credentials.totpToken}
-                    onChange={(e) => setCredentials({ ...credentials, totpToken: e.target.value })}
-                    maxLength={6}
-                    required
-                  />
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loginMutation.isPending}
-              >
-                {loginMutation.isPending ? (
-                  <>
-                    <Lock className="mr-2 h-4 w-4 animate-spin" />
-                    Wird angemeldet...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="mr-2 h-4 w-4" />
-                    Anmelden
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
-  );
+  return null; // Fallback, sollte nie erreicht werden
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, UseGuards, Req, ConflictException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,11 +25,21 @@ export class AuthController {
   }
 
   @Post('setup')
-  async setup(@Body() data: { username: string; email: string; password: string }) {
+  async setup(@Body() setupData: any) {
     try {
-      return await this.authService.initialSetup(data);
+      console.log('🚀 [AUTH] Starting initial setup...');
+      console.log('🚀 [AUTH] Setup data:', { username: setupData.username, email: setupData.email });
+      
+      const result = await this.authService.initialSetup(setupData);
+      return result;
     } catch (error) {
       console.error('Setup endpoint error:', error);
+      
+      // Wenn Setup schon gemacht wurde, gib 409 zurück statt 500
+      if (error.message?.includes('Setup already completed')) {
+        throw new ConflictException('Setup was already completed. Please login instead.');
+      }
+      
       throw error;
     }
   }
