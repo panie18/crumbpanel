@@ -98,6 +98,7 @@ export class AuthService {
       console.log('💾 [AUTH] Creating user in database...');
       const user = this.userRepository.create({
         username: setupData.username,
+        name: setupData.username, // Use username as name initially
         email: setupData.email,
         password: hashedPassword,
         role: 'ADMIN',

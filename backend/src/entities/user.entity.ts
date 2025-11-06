@@ -11,6 +11,9 @@ export class User {
   @Column()
   username: string;
 
+  @Column({ nullable: true })
+  name: string;
+
   @Column()
   password: string;
 
@@ -22,6 +25,9 @@ export class User {
 
   @Column({ default: false })
   totpEnabled: boolean;
+
+  @Column({ nullable: true })
+  picture: string;
 
   @Column({ nullable: true })
   profilePicture: string;
