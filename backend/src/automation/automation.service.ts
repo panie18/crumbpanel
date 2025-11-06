@@ -76,4 +76,37 @@ export class AutomationService {
       await this.executeRule(rule, {});
     }
   }
+
+  async getRules(serverId: string) {
+    return this.ruleRepository.find({ where: { serverId } });
+  }
+
+  async createRule(data: any) {
+    const rule = this.ruleRepository.create(data);
+    return this.ruleRepository.save(rule);
+  }
+
+  async deleteRule(id: string) {
+    await this.ruleRepository.delete(id);
+    return { success: true };
+  }
+
+  async executeRule(rule: AutomationRule) {
+    console.log('Executing automation rule:', rule.name);
+
+    // Execute based on action type
+    switch (rule.action) {
+      case 'restart_server':
+        console.log('Restarting server...');
+        break;
+      case 'send_command':
+        console.log('Sending command...');
+        break;
+      case 'backup':
+        console.log('Creating backup...');
+        break;
+      default:
+        console.log('Unknown action:', rule.action);
+    }
+  }
 }
