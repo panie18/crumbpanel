@@ -61,10 +61,12 @@ export default function ServersPage() {
         </div>
       )}
 
-      <CreateServerDialog 
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-      />
+      {showCreateDialog && (
+        <CreateServerDialog 
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+        />
+      )}
     </div>
   );
 }
