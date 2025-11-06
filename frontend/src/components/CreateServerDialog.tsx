@@ -26,10 +26,7 @@ interface CreateServerDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export default function CreateServerDialog({
-  open,
-  onOpenChange,
-}: CreateServerDialogProps) {
+export default function CreateServerDialog({ open, onOpenChange }: CreateServerDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     serverType: 'java',
