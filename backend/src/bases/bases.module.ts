@@ -8,6 +8,5 @@ import { PlayerBase } from '../entities/player-base.entity';
   imports: [TypeOrmModule.forFeature([PlayerBase])],
   controllers: [BasesController],
   providers: [BasesService],
-  exports: [BasesService],
 })
 export class BasesModule {}

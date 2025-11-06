@@ -8,6 +8,5 @@ import { AutomationRule } from '../entities/automation-rule.entity';
   imports: [TypeOrmModule.forFeature([AutomationRule])],
   controllers: [AutomationController],
   providers: [AutomationService],
-  exports: [AutomationService],
 })
 export class AutomationModule {}
