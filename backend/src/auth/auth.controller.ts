@@ -27,17 +27,20 @@ export class AuthController {
   @Post('setup')
   async setup(@Body() setupData: any) {
     try {
-      console.log('🚀 [AUTH] Starting initial setup...');
-      console.log('🚀 [AUTH] Setup data:', { username: setupData.username, email: setupData.email });
-      
+      console.log('🚀 [CONTROLLER] Setup request received');
       const result = await this.authService.initialSetup(setupData);
+      console.log('✅ [CONTROLLER] Setup successful');
       return result;
     } catch (error) {
-      console.error('Setup endpoint error:', error);
+      console.error('❌ [CONTROLLER] Setup error:', error.message);
       
-      // Wenn Setup schon gemacht wurde, gib 409 zurück statt 500
+      // Return proper error response
       if (error.message?.includes('Setup already completed')) {
-        throw new ConflictException('Setup was already completed. Please login instead.');
+        return {
+          statusCode: 409,
+          message: 'Setup was already completed. Please login instead.',
+          error: 'Conflict'
+        };
       }
       
       throw error;

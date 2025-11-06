@@ -53,6 +53,9 @@ docker compose up -d
 echo "⏳ Waiting 30 seconds..."
 sleep 30
 
+# Get IP
+IP=$(hostname -I | awk '{print $1}')
+
 # Show result
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
@@ -60,13 +63,18 @@ echo "║            ✅ NUCLEAR RESET COMPLETE! ✅               ║"
 echo "║              EVERYTHING WAS DELETED!                   ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
-
-# Get IP
-IP=$(hostname -I | awk '{print $1}')
-
-echo "🌐 Go to: http://$IP:8437"
-echo "📋 Status:"
-docker compose ps
-
+echo "🌐 ACCESS CRUMBPANEL:"
+echo "   👉 http://$IP:8437"
+echo "   👉 http://localhost:8437"
 echo ""
-echo "🎯 This should now show SETUP WIZARD!"
+echo "🔧 API ENDPOINT:"  
+echo "   👉 http://$IP:5829/api"
+echo ""
+echo "📋 STATUS:"
+docker compose ps
+echo ""
+echo "🎯 NEXT: Go to http://$IP:8437 and complete setup!"
+echo ""
+echo "⭐ GITHUB: https://github.com/panie18/crumbpanel"
+echo "💝 MADE BY: https://paulify.eu"
+echo ""

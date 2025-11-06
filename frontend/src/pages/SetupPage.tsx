@@ -69,22 +69,32 @@ export default function SetupPage() {
     },
     onSuccess: (response) => {
       console.log('✅ [SETUP] Setup complete:', response.data);
-      const { user, token } = response.data;
       
-      // WICHTIG: Setze Auth SOFORT
-      setAuth(user, token);
-      
-      toast.success('Setup abgeschlossen! Willkommen! 🎉');
-      
-      // Warte kurz, dann navigiere
-      setTimeout(() => {
-        console.log('🔀 [SETUP] Navigating to dashboard...');
-        navigate('/', { replace: true });
-      }, 500);
+      // Handle both new setup and existing setup
+      if (response.data.user && response.data.token) {
+        const { user, token } = response.data;
+        setAuth(user, token);
+        toast.success(response.data.message || 'Setup completed successfully! 🎉');
+        
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 500);
+      } else {
+        toast.error('Setup response invalid');
+      }
     },
     onError: (error: any) => {
       console.error('❌ [SETUP] Failed:', error);
-      toast.error(error.response?.data?.message || 'Setup fehlgeschlagen');
+      
+      if (error.response?.status === 409) {
+        toast.error('Setup already completed. Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login', { replace: true });
+        }, 1500);
+      } else {
+        const message = error.response?.data?.message || 'Setup fehlgeschlagen';
+        toast.error(message);
+      }
     }
 	});
 

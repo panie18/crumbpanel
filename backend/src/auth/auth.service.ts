@@ -46,55 +46,93 @@ export class AuthService {
     }
   }
 
-  async initialSetup(data: { username: string; email: string; password: string }) {
+  async initialSetup(setupData: {
+    username: string;
+    email: string;
+    password: string;
+  }) {
     try {
       console.log('🚀 [AUTH] Starting initial setup...');
-      console.log('🚀 [AUTH] Setup data:', { username: data.username, email: data.email });
+      console.log('🚀 [AUTH] Setup data:', { username: setupData.username, email: setupData.email });
       
+      // Check if setup is already done
       console.log('🔍 [AUTH] Checking current user count...');
       const userCount = await this.userRepository.count();
-      console.log(`🔍 [AUTH] Current user count: ${userCount}`);
-      
+      console.log('🔍 [AUTH] Current user count:', userCount);
+
       if (userCount > 0) {
         console.log('❌ [AUTH] Setup already completed');
-        throw new Error('Setup already completed');
+        // Don't throw error, just return existing user info
+        const existingUser = await this.userRepository.findOne({ 
+          where: {}, 
+          order: { createdAt: 'ASC' } 
+        });
+        
+        if (existingUser) {
+          const token = this.jwtService.sign({
+            sub: existingUser.id,
+            email: existingUser.email,
+          });
+          
+          return {
+            message: 'Setup was already completed, logging you in',
+            user: {
+              id: existingUser.id,
+              username: existingUser.username,
+              email: existingUser.email,
+              role: existingUser.role,
+            },
+            token,
+          };
+        }
+        
+        throw new Error('Setup already completed but no user found');
       }
 
+      // Hash password
+      console.log('🔐 [AUTH] Hashing password...');
+      const hashedPassword = await bcrypt.hash(setupData.password, 10);
+
+      // Create user
       console.log('💾 [AUTH] Creating user in database...');
-      const user = await this.userRepository.save({
-        email: data.email,
-        name: data.username,
-        password: data.password,
+      const user = this.userRepository.create({
+        username: setupData.username,
+        email: setupData.email,
+        password: hashedPassword,
         role: 'ADMIN',
       });
-      console.log('✅ [AUTH] User created with ID:', user.id);
 
+      const savedUser = await this.userRepository.save(user);
+      console.log('✅ [AUTH] User created with ID:', savedUser.id);
+
+      // Generate token
       console.log('🎫 [AUTH] Generating JWT token...');
-      const payload = { sub: user.id, email: user.email, role: user.role };
-      const accessToken = this.jwtService.sign(payload);
+      const token = this.jwtService.sign({
+        sub: savedUser.id,
+        email: savedUser.email,
+      });
       console.log('✅ [AUTH] JWT token generated');
 
       console.log('🎉 [AUTH] Setup completed successfully');
       return {
+        message: 'Setup completed successfully',
         user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
+          id: savedUser.id,
+          username: savedUser.username,
+          email: savedUser.email,
+          role: savedUser.role,
         },
-        accessToken,
+        token,
       };
+
     } catch (error) {
       console.error('💥 [AUTH] Setup failed with error:', error);
       console.error('💥 [AUTH] Error name:', error.name);
       console.error('💥 [AUTH] Error message:', error.message);
       console.error('💥 [AUTH] Error stack:', error.stack);
       
-      if (error.message?.includes('UNIQUE constraint failed')) {
-        throw new Error('Email already exists');
-      }
-      
-      throw new Error(`Setup failed: ${error.message}`);
+      // Don't wrap in another error
+      throw error;
     }
   }
 

@@ -86,15 +86,17 @@ docker-compose up -d --build
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- 🐳 **Docker & Docker Compose**
-- 💾 **2GB+ RAM**
-- 💿 **10GB+ Storage**
-
-### 1. Clone Repository
+### One-Line Install
 ```bash
-git clone https://github.com/your-username/crumbpanel.git
+curl -fsSL https://raw.githubusercontent.com/panie18/crumbpanel/main/install.sh | bash
+```
+
+### Manual Install
+```bash
+git clone https://github.com/panie18/crumbpanel.git
 cd crumbpanel
+chmod +x install.sh
+./install.sh
 ```
 
 ### 2. Start CrumbPanel
