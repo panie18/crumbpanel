@@ -32,8 +32,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/setup" element={<SetupPage />} />
+          <Route path="/login" element={<LoginPage />} />
           
           <Route path="/" element={
             <ProtectedRoute>

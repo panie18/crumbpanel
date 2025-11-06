@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -27,11 +27,20 @@ export default function LoginPage() {
     queryKey: ['setup-status'],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/auth/setup-status`);
+      console.log('✅ Setup Status:', response.data);
       return response.data;
     },
     retry: false,
     refetchOnWindowFocus: false,
   });
+
+  // Redirect to setup if needed
+  useEffect(() => {
+    if (setupStatus?.needsSetup) {
+      console.log('🔀 Redirecting to setup...');
+      navigate('/setup', { replace: true });
+    }
+  }, [setupStatus, navigate]);
 
   const loginMutation = useMutation({
     mutationFn: async (creds: { email: string; password: string; totpToken?: string }) => {
@@ -68,18 +77,17 @@ export default function LoginPage() {
     });
   };
 
-  // Redirect to setup if needed
-  if (setupStatus?.needsSetup) {
-    navigate('/setup', { replace: true });
-    return null;
-  }
-
   if (isCheckingSetup) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // Don't render login form if setup is needed
+  if (setupStatus?.needsSetup) {
+    return null;
   }
 
   return (
