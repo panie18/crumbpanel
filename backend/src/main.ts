@@ -44,11 +44,18 @@ async function bootstrap() {
       logger: ['log', 'error', 'warn', 'debug', 'verbose'],
     });
 
+    // Enable CORS
     app.enableCors({
-      origin: ['http://localhost:8437', 'http://localhost:3000'], 
+      origin: [
+        'http://localhost:3000',
+        'http://localhost:8437',
+        'http://192.168.0.10:8437',
+        /^http:\/\/.*:8437$/,
+        /^http:\/\/.*:3000$/,
+      ],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
     });
     
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

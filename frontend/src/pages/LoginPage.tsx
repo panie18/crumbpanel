@@ -14,7 +14,9 @@ import { Server, Shield, Lock } from 'lucide-react';
 
 const API_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:5829/api'
-  : '/api';
+  : window.location.port === '8437'
+    ? `http://${window.location.hostname}:5829/api`
+    : '/api';
 
 export default function LoginPage() {
   const [credentials, setCredentials] = useState({ email: '', password: '', totpToken: '' });
@@ -37,16 +39,25 @@ export default function LoginPage() {
     queryKey: ['setup-status'],
     queryFn: async () => {
       try {
-        console.log('🔍 Checking setup status...');
-        const response = await axios.get(`${API_URL}/auth/setup-status`);
+        console.log('🔍 Checking setup status at:', `${API_URL}/auth/setup-status`);
+        const response = await axios.get(`${API_URL}/auth/setup-status`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        });
         console.log('✅ Setup Status:', response.data);
         return response.data;
-      } catch (err) {
-        console.error('❌ Setup check failed:', err);
+      } catch (err: any) {
+        console.error('❌ Setup check failed:', {
+          message: err.message,
+          status: err.response?.status,
+          url: `${API_URL}/auth/setup-status`,
+        });
         throw err;
       }
     },
-    retry: 1,
+    retry: 2,
     refetchOnWindowFocus: false,
   });
 
