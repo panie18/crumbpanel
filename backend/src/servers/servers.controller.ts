@@ -84,9 +84,9 @@ export class ServersController {
   }
 
   @Post(':id/command')
-  async sendCommand(@Param('id') id: string, @Body() { command }: { command: string }) {
-    console.log('📝 [CONTROLLER] Sending command to server:', id, command);
-    return this.serversService.sendCommand(id, command);
+  async sendCommand(@Param('id') id: string, @Body() body: { command: string }) {
+    console.log('📝 [CONTROLLER] Sending command to server:', id, body.command);
+    return this.serversService.sendCommand(id, body.command);
   }
 
   @Delete(':id')
