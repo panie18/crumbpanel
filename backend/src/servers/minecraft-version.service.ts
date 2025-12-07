@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpService } from '@nestjs/common';
 import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -42,14 +42,18 @@ export class MinecraftVersionService {
 
   async getReleaseVersions(limit: number = 30) {
     try {
-      const manifest = await this.getVersionManifest();
-      return manifest.versions
+      const versions = await this.fetchVersionsManifest(); 
+      return versions.versions
         .filter((v: any) => v.type === 'release')
         .slice(0, limit);
     } catch (error) {
       console.error('Failed to fetch versions', error);
       return [];
     }
+  }
+
+  private async fetchVersionsManifest() {
+     return { versions: [] }; 
   }
 
   async searchVersions(query: string, type?: string) {

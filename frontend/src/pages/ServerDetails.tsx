@@ -1,6 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../utils/api'; // Ensure this path is correct for your project
+
+// --- Internal API Helper (replaces missing ../utils/api) ---
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5829/api').replace(/\/$/, '');
+
+const getHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+};
+
+const api = {
+  get: async (endpoint: string) => {
+    const res = await fetch(`${API_BASE}${endpoint}`, { headers: getHeaders() });
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return { data: await res.json() };
+  },
+  post: async (endpoint: string, body: any = {}) => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return { data: await res.json() };
+  }
+};
+// -----------------------------------------------------------
 
 const ServerDetails = () => {
   const { id } = useParams();
@@ -207,7 +235,7 @@ const ServerDetails = () => {
                     <button className="text-red-500 hover:text-red-700">Delete</button>
                   </div>
                 ))
-              )}
+              }
             </div>
           </div>
         )}

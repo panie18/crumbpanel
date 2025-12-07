@@ -74,7 +74,7 @@ export class ServersService {
 
   async startServer(id: string) {
     const container = await this.getContainer(id);
-    // Fix: Remove arguments from start() to match Dockerode types
+    // Fix: Remove arguments from start()
     await container.start();
     return { success: true, status: 'starting' };
   }
@@ -107,7 +107,6 @@ export class ServersService {
   }
 
   async installPlugin(id: string, data: any) {
-    // In a real implementation, this would download from a URL
     console.log(`Installing plugin ${data.name} for server ${id}`);
     return { success: true, message: 'Plugin installation simulated' };
   }
@@ -159,4 +158,30 @@ export class ServersService {
       content.split('\n').forEach(line => {
         if (line && !line.startsWith('#') && line.includes('=')) {
           const [key, ...val] = line.split('=');
-          if
+          if (key) props[key.trim()] = val.join('=').trim();
+        }
+      });
+      return props;
+    } catch {
+      return {};
+    }
+  }
+
+  async updateProperties(id: string, props: any) {
+    const propsPath = path.join(this.getServerPath(id), 'server.properties');
+    let content = '# Minecraft server properties\n# Modified by CrumbPanel\n';
+    try {
+      for (const [key, value] of Object.entries(props)) {
+        content += `${key}=${value}\n`;
+      }
+      await fs.writeFile(propsPath, content);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
+  }
+
+  private getServerPath(id: string): string {
+    return path.join(process.cwd(), 'data', 'servers', id);
+  }
+}
