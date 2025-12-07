@@ -7,7 +7,7 @@ export class TotpService {
   /**
    * Generate TOTP secret
    */
-  generateSecret(email: string): { secret: string; qrCode: string } {
+  generateSecret(email: string): { secret: string; qrCode: string; qrCodeUrl: string; manualEntryKey: string } {
     const secret = speakeasy.generateSecret({
       name: `CrumbPanel (${email})`,
       issuer: 'CrumbPanel',
@@ -17,6 +17,8 @@ export class TotpService {
     return {
       secret: secret.base32,
       qrCode: secret.otpauth_url,
+      qrCodeUrl: secret.otpauth_url,
+      manualEntryKey: secret.base32
     };
   }
 
@@ -40,7 +42,7 @@ export class TotpService {
       secret,
       encoding: 'base32',
       token,
-      window: 2, // Allow 2 time steps before/after
+      window: 2,
     });
   }
 

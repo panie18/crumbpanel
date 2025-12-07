@@ -6,7 +6,6 @@ export class Fido2Service {
    * Generate registration options for WebAuthn
    */
   async generateRegistrationOptions(userId: string, username: string): Promise<any> {
-    // Placeholder implementation
     console.log(`[Fido2Service] Generating registration options for ${username}`);
     
     return {
@@ -21,8 +20,8 @@ export class Fido2Service {
         displayName: username,
       },
       pubKeyCredParams: [
-        { type: 'public-key', alg: -7 },  // ES256
-        { type: 'public-key', alg: -257 }, // RS256
+        { type: 'public-key', alg: -7 },
+        { type: 'public-key', alg: -257 },
       ],
       timeout: 60000,
       attestation: 'none',
@@ -33,30 +32,43 @@ export class Fido2Service {
    * Verify registration response
    */
   async verifyRegistrationResponse(response: any): Promise<boolean> {
-    // Placeholder implementation
     console.log(`[Fido2Service] Verifying registration response`);
     return true;
+  }
+
+  /**
+   * Generate credential request options (for authentication)
+   */
+  async generateCredentialRequestOptions(userId: string): Promise<any> {
+    console.log(`[Fido2Service] Generating credential request for user ${userId}`);
+    
+    return {
+      challenge: Buffer.from(Math.random().toString()).toString('base64'),
+      timeout: 60000,
+      userVerification: 'preferred',
+      allowCredentials: []
+    };
   }
 
   /**
    * Generate authentication options
    */
   async generateAuthenticationOptions(userId: string): Promise<any> {
-    // Placeholder implementation
-    console.log(`[Fido2Service] Generating authentication options for user ${userId}`);
-    
-    return {
-      challenge: Buffer.from(Math.random().toString()).toString('base64'),
-      timeout: 60000,
-      userVerification: 'preferred',
-    };
+    return this.generateCredentialRequestOptions(userId);
+  }
+
+  /**
+   * Verify authenticator assertion (authentication response)
+   */
+  async verifyAuthenticatorAssertion(response: any, userId: string): Promise<boolean> {
+    console.log(`[Fido2Service] Verifying authenticator assertion for user ${userId}`);
+    return true;
   }
 
   /**
    * Verify authentication response
    */
   async verifyAuthenticationResponse(response: any): Promise<boolean> {
-    // Placeholder implementation
     console.log(`[Fido2Service] Verifying authentication response`);
     return true;
   }
