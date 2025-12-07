@@ -8,7 +8,7 @@ import { Server } from '../entities/server.entity';
       type: 'sqlite',
       database: './data/crumbpanel.db',
       entities: [Server],
-      synchronize: true, // Auto-create tables (nur für Dev!)
+      synchronize: true,
       logging: false,
     }),
     TypeOrmModule.forFeature([Server]),
