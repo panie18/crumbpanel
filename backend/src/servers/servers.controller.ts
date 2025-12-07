@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Query, Res, Patch } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { ServersService } from './servers.service';
@@ -117,13 +117,20 @@ export class ServersController {
 
   @Post(':id/automations')
   async createAutomation(@Param('id') id: string, @Body() body: any) {
-    console.log('🤖 [CONTROLLER] Creating automation:', id);
+    console.log('🤖 [CONTROLLER] Creating automation:', id, body);
     return this.serversService.createAutomation(id, body);
   }
 
   @Delete(':id/automations/:autoId')
   async deleteAutomation(@Param('id') id: string, @Param('autoId') autoId: string) {
+    console.log('🗑️ [CONTROLLER] Deleting automation:', id, autoId);
     return this.serversService.deleteAutomation(id, autoId);
+  }
+
+  @Patch(':id/automations/:autoId')
+  async toggleAutomation(@Param('id') id: string, @Param('autoId') autoId: string, @Body() body: { enabled: boolean }) {
+    console.log('🔄 [CONTROLLER] Toggling automation:', id, autoId, body.enabled);
+    return this.serversService.toggleAutomation(id, autoId, body.enabled);
   }
 
   @Get(':id/properties')

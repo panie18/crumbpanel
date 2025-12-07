@@ -1,40 +1,49 @@
 import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 
 @Injectable()
 export class MinecraftVersionService {
   private cachedManifest: any | null = null;
   private lastFetch: number = 0;
-  private CACHE_TTL = 5 * 60 * 1000; // 5 Minuten Cache
+  private CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
   private async fetchVersionsManifest(): Promise<{ versions: any[] }> {
     const now = Date.now();
     
-    // Cache prüfen
+    // Check cache
     if (this.cachedManifest && (now - this.lastFetch) < this.CACHE_TTL) {
+      console.log('📋 [VERSIONS] Using cached manifest');
       return this.cachedManifest;
     }
 
     try {
-      // Echte Mojang API
-      const response = await fetch('https://launchermeta.mojang.com/mc/game/version_manifest.json');
-      const data = await response.json();
+      console.log('📋 [VERSIONS] Fetching from Mojang API...');
+      const response = await axios.get('https://launchermeta.mojang.com/mc/game/version_manifest.json', {
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'CrumbPanel/1.0'
+        }
+      });
       
-      this.cachedManifest = data;
+      this.cachedManifest = response.data;
       this.lastFetch = now;
       
-      return data;
-    } catch (error) {
-      console.error('[MinecraftVersionService] Failed to fetch from Mojang API:', error);
+      console.log(`✅ [VERSIONS] Loaded ${response.data.versions.length} versions from Mojang`);
+      return response.data;
       
-      // Fallback: Dummy-Daten
+    } catch (error) {
+      console.error('❌ [VERSIONS] Failed to fetch from Mojang:', error.message);
+      
+      // Fallback data
       if (!this.cachedManifest) {
         this.cachedManifest = {
+          latest: { release: '1.21.4', snapshot: '24w14a' },
           versions: [
-            { id: '1.20.4', type: 'release', url: '', time: '2024-01-01T00:00:00Z' },
-            { id: '1.20.3', type: 'release', url: '', time: '2023-12-01T00:00:00Z' },
-            { id: '1.20.2', type: 'release', url: '', time: '2023-11-01T00:00:00Z' },
-            { id: '1.20.1', type: 'release', url: '', time: '2023-10-01T00:00:00Z' },
-            { id: '1.19.4', type: 'release', url: '', time: '2023-09-01T00:00:00Z' },
+            { id: '1.21.4', type: 'release', url: '', time: '2024-12-01T00:00:00Z', releaseTime: '2024-12-01T00:00:00Z' },
+            { id: '1.21.3', type: 'release', url: '', time: '2024-10-01T00:00:00Z', releaseTime: '2024-10-01T00:00:00Z' },
+            { id: '1.21.1', type: 'release', url: '', time: '2024-08-01T00:00:00Z', releaseTime: '2024-08-01T00:00:00Z' },
+            { id: '1.20.6', type: 'release', url: '', time: '2024-06-01T00:00:00Z', releaseTime: '2024-06-01T00:00:00Z' },
+            { id: '1.20.4', type: 'release', url: '', time: '2024-01-01T00:00:00Z', releaseTime: '2024-01-01T00:00:00Z' },
           ]
         };
       }
@@ -43,42 +52,53 @@ export class MinecraftVersionService {
     }
   }
 
-  async getLatestReleaseVersion(): Promise<string | null> {
-    const manifest = await this.fetchVersionsManifest();
-    const release = manifest.versions.find((v: any) => v.type === 'release');
-    return release?.id ?? null;
+  async getLatestReleaseVersion(): Promise<string> {
+    try {
+      const manifest = await this.fetchVersionsManifest();
+      return manifest.latest?.release || manifest.versions.find(v => v.type === 'release')?.id || '1.21.4';
+    } catch (error) {
+      console.error('❌ [VERSIONS] getLatestReleaseVersion error:', error);
+      return '1.21.4';
+    }
   }
 
-  async getLatestSnapshotVersion(): Promise<string | null> {
-    const manifest = await this.fetchVersionsManifest();
-    const snapshot = manifest.versions.find((v: any) => v.type === 'snapshot');
-    return snapshot?.id ?? null;
+  async getLatestSnapshotVersion(): Promise<string> {
+    try {
+      const manifest = await this.fetchVersionsManifest();
+      return manifest.latest?.snapshot || manifest.versions.find(v => v.type === 'snapshot')?.id || '24w14a';
+    } catch (error) {
+      return '24w14a';
+    }
   }
 
   async getReleaseVersions(limit: number = 30): Promise<any[]> {
-    const manifest = await this.fetchVersionsManifest();
-    return manifest.versions
-      .filter((v: any) => v.type === 'release')
-      .slice(0, limit);
+    try {
+      const manifest = await this.fetchVersionsManifest();
+      return manifest.versions
+        .filter((v: any) => v.type === 'release')
+        .slice(0, limit)
+        .map((v: any) => ({
+          id: v.id,
+          type: v.type,
+          releaseTime: v.releaseTime,
+          url: v.url
+        }));
+    } catch (error) {
+      console.error('❌ [VERSIONS] getReleaseVersions error:', error);
+      return [];
+    }
   }
 
   async searchVersions(query: string, type?: 'release' | 'snapshot'): Promise<any[]> {
-    const manifest = await this.fetchVersionsManifest();
-    return manifest.versions.filter((v: any) => {
-      const matchesQuery = v.id?.toLowerCase().includes(query.toLowerCase());
-      const matchesType = type ? v.type === type : true;
-      return matchesQuery && matchesType;
-    });
-  }
-
-  async downloadServerJar(version: string, targetPath: string): Promise<void> {
-    console.log(`[MinecraftVersionService] Downloading server.jar for version ${version} to ${targetPath}`);
-    
-    // TODO: Echten Download implementieren
-    // 1. Version Manifest abrufen
-    // 2. Version-spezifisches JSON laden (enthält server.jar URL)
-    // 3. server.jar runterladen nach targetPath
-    
-    return Promise.resolve();
+    try {
+      const manifest = await this.fetchVersionsManifest();
+      return manifest.versions.filter((v: any) => {
+        const matchesQuery = v.id?.toLowerCase().includes(query.toLowerCase());
+        const matchesType = type ? v.type === type : true;
+        return matchesQuery && matchesType;
+      }).slice(0, 20);
+    } catch (error) {
+      return [];
+    }
   }
 }

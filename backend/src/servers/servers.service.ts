@@ -243,9 +243,15 @@ pvp=true
   async createAutomation(id: string, automation: any) {
     const configPath = path.join(this.getServerPath(id), 'crumbpanel_automations.json');
     const automations = await this.getAutomations(id);
-    automations.push({ ...automation, id: Date.now().toString() });
+    const newAutomation = {
+      ...automation,
+      id: Date.now().toString(),
+      enabled: true,
+      createdAt: new Date().toISOString()
+    };
+    automations.push(newAutomation);
     await fs.writeFile(configPath, JSON.stringify(automations, null, 2), 'utf-8');
-    return { success: true };
+    return newAutomation;
   }
 
   async deleteAutomation(id: string, autoId: string) {
@@ -253,6 +259,17 @@ pvp=true
     let automations = await this.getAutomations(id);
     automations = automations.filter((a: any) => a.id !== autoId);
     await fs.writeFile(configPath, JSON.stringify(automations, null, 2), 'utf-8');
+    return { success: true };
+  }
+
+  async toggleAutomation(id: string, autoId: string, enabled: boolean) {
+    const configPath = path.join(this.getServerPath(id), 'crumbpanel_automations.json');
+    const automations = await this.getAutomations(id);
+    const automation = automations.find((a: any) => a.id === autoId);
+    if (automation) {
+      automation.enabled = enabled;
+      await fs.writeFile(configPath, JSON.stringify(automations, null, 2), 'utf-8');
+    }
     return { success: true };
   }
 
