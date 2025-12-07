@@ -323,3 +323,385 @@ docker-compose up -d
 
 ---
 
+## 🌍 Multi-Language Quick Help & Troubleshooting
+
+> This section gives a very short overview and common fixes in multiple languages.
+
+---
+
+### 🇩🇪 Deutsch – Kurzanleitung & Fehlerbehebung
+
+**Was ist CrumbPanel?**  
+CrumbPanel ist ein Web-Panel, mit dem du Minecraft-Server per Browser verwalten kannst (Start/Stop, Konsole, Plugins, Automationen, Einstellungen usw.).
+
+**Start nach der Installation**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+Öffne dann im Browser:
+
+- Panel: `http://DEINE-IP:8437` oder `http://localhost:8437`
+- API (optional): `http://DEINE-IP:5829/api`
+
+**Standard-Login**
+
+- E-Mail: `admin@mcpanel.local`
+- Passwort: `admin123`  
+➡️ Sofort nach dem ersten Login ändern!
+
+**Häufige Probleme**
+
+1. **Seite lädt nicht / Verbindung abgelehnt**
+
+   - Prüfe Container:
+     ```bash
+     cd ~/crumbpanel
+     docker compose ps
+     docker compose logs -f
+     ```
+   - Ports 8437 und 5829 dürfen nicht von anderen Programmen belegt sein.
+
+2. **Änderungen werden nicht übernommen**
+
+   - Nach Code-Änderungen neu bauen:
+     ```bash
+     docker compose down
+     docker compose build --no-cache
+     docker compose up -d
+     ```
+
+3. **Alles zerschossen / komplett neu beginnen**
+
+   - Vorsicht: löscht wirklich alles!
+     ```bash
+     cd ~/crumbpanel
+     ./reset-all.sh
+     ```
+
+---
+
+### 🇬🇧 English – Quick Guide & Troubleshooting
+
+**What is CrumbPanel?**  
+CrumbPanel is a web panel to manage Minecraft servers from your browser (start/stop, console, plugins, automations, settings, etc.).
+
+**Start after installation**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+Open in your browser:
+
+- Panel: `http://YOUR-IP:8437` or `http://localhost:8437`
+- API (optional): `http://YOUR-IP:5829/api`
+
+**Default login**
+
+- Email: `admin@mcpanel.local`
+- Password: `admin123`  
+➡️ Change this immediately after the first login!
+
+**Common issues**
+
+1. **Site not loading / connection refused**
+
+   - Check containers:
+     ```bash
+     cd ~/crumbpanel
+     docker compose ps
+     docker compose logs -f
+     ```
+
+2. **Frontend/backend changes not visible**
+
+   - Rebuild images:
+     ```bash
+     docker compose down
+     docker compose build --no-cache
+     docker compose up -d
+     ```
+
+3. **Completely broken / want factory reset**
+
+   - WARNING: deletes everything:
+     ```bash
+     cd ~/crumbpanel
+     ./reset-all.sh
+     ```
+
+---
+
+### 🇫🇷 Français – Guide rapide & Dépannage
+
+**Qu’est-ce que CrumbPanel ?**  
+CrumbPanel est un panneau web pour gérer des serveurs Minecraft (démarrage/arrêt, console, plugins, automatisations, paramètres, etc.).
+
+**Démarrage après l’installation**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+Dans votre navigateur :
+
+- Panel : `http://VOTRE-IP:8437` ou `http://localhost:8437`
+- API : `http://VOTRE-IP:5829/api`
+
+**Identifiants par défaut**
+
+- Email : `admin@mcpanel.local`
+- Mot de passe : `admin123`  
+➡️ Changez le mot de passe après la première connexion !
+
+**Problèmes fréquents**
+
+- Vérifier l’état des conteneurs :
+  ```bash
+  docker compose ps
+  docker compose logs -f
+  ```
+
+- Reconstruire en cas de modification :
+  ```bash
+  docker compose down
+  docker compose build --no-cache
+  docker compose up -d
+  ```
+
+---
+
+### 🇪🇸 Español – Guía rápida & Solución de problemas
+
+**¿Qué es CrumbPanel?**  
+CrumbPanel es un panel web para administrar servidores de Minecraft (inicio/parada, consola, plugins, automatizaciones, ajustes, etc.).
+
+**Inicio después de la instalación**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+En el navegador:
+
+- Panel: `http://TU-IP:8437` o `http://localhost:8437`
+- API: `http://TU-IP:5829/api`
+
+**Credenciales por defecto**
+
+- Email: `admin@mcpanel.local`
+- Contraseña: `admin123`  
+➡️ ¡Cambia la contraseña tras el primer inicio de sesión!
+
+**Problemas típicos**
+
+- Ver contenedores y logs:
+  ```bash
+  docker compose ps
+  docker compose logs -f
+  ```
+
+- Reconstruir si hay errores de build o cambios:
+  ```bash
+  docker compose down
+  docker compose build --no-cache
+  docker compose up -d
+  ```
+
+---
+
+### 🇨🇳 简体中文 – 快速指南与故障排除
+
+**CrumbPanel 是什么？**  
+CrumbPanel 是一个网页面板，用于在浏览器中管理 Minecraft 服务器（启动/停止、控制台、插件、自动化、配置等）。
+
+**安装后启动**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+浏览器打开：
+
+- 面板: `http://你的IP:8437` 或 `http://localhost:8437`
+- API: `http://你的IP:5829/api`
+
+**默认账号**
+
+- 邮箱: `admin@mcpanel.local`
+- 密码: `admin123`  
+➡️ 第一次登录后请立即修改密码！
+
+**常见问题**
+
+- 查看容器状态和日志：
+  ```bash
+  docker compose ps
+  docker compose logs -f
+  ```
+
+- 修改代码后重新构建：
+  ```bash
+  docker compose down
+  docker compose build --no-cache
+  docker compose up -d
+  ```
+
+---
+
+### 🇯🇵 日本語 – クイックガイド & トラブルシュート
+
+**CrumbPanel とは？**  
+CrumbPanel は、ブラウザから Minecraft サーバーを管理するための Web パネルです（起動/停止、コンソール、プラグイン、自動化、設定など）。
+
+**インストール後の起動**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+ブラウザでアクセス：
+
+- パネル: `http://あなたのIP:8437` または `http://localhost:8437`
+- API: `http://あなたのIP:5829/api`
+
+**デフォルトログイン**
+
+- メール: `admin@mcpanel.local`
+- パスワード: `admin123`  
+➡️ 初回ログイン後に必ず変更してください。
+
+**よくある問題**
+
+- コンテナとログを確認：
+  ```bash
+  docker compose ps
+  docker compose logs -f
+  ```
+
+---
+
+### 🇳🇱 Nederlands – Korte handleiding & Probleemoplossing
+
+**Wat is CrumbPanel?**  
+CrumbPanel is een webpaneel om Minecraft-servers via de browser te beheren (start/stop, console, plugins, automatisering, instellingen, enz.).
+
+**Starten na installatie**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+In je browser:
+
+- Paneel: `http://JOUW-IP:8437` of `http://localhost:8437`
+- API: `http://JOUW-IP:5829/api`
+
+**Standaard login**
+
+- E‑mail: `admin@mcpanel.local`
+- Wachtwoord: `admin123`  
+➡️ Wachtwoord direct na de eerste login wijzigen!
+
+**Veelvoorkomende problemen**
+
+- Containerstatus:
+  ```bash
+  docker compose ps
+  docker compose logs -f
+  ```
+
+---
+
+### 🇩🇰 Dansk – Kort guide & fejlfinding
+
+**Hvad er CrumbPanel?**  
+CrumbPanel er et webpanel til at styre Minecraft-servere i browseren (start/stop, konsol, plugins, automation, indstillinger osv.).
+
+**Start efter installation**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+I browseren:
+
+- Panel: `http://DIN-IP:8437` eller `http://localhost:8437`
+- API: `http://DIN-IP:5829/api`
+
+**Standard-login**
+
+- Email: `admin@mcpanel.local`
+- Kodeord: `admin123`  
+➡️ Skift kodeord efter første login!
+
+---
+
+### 🇳🇴 Norsk – Kort veiledning & feilsøking
+
+**Hva er CrumbPanel?**  
+CrumbPanel er et webpanel for å administrere Minecraft-servere i nettleseren (start/stop, konsoll, plugins, automatisering, innstillinger osv.).
+
+**Starte etter installasjon**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+I nettleseren:
+
+- Panel: `http://DIN-IP:8437` eller `http://localhost:8437`
+- API: `http://DIN-IP:5829/api`
+
+**Standard pålogging**
+
+- E‑post: `admin@mcpanel.local`
+- Passord: `admin123`  
+➡️ Bytt passord etter første innlogging!
+
+---
+
+### 🇵🇹 Português – Guia rápido & resolução de problemas
+
+**O que é o CrumbPanel?**  
+CrumbPanel é um painel web para gerir servidores de Minecraft (iniciar/parar, consola, plugins, automações, definições, etc.).
+
+**Iniciar após a instalação**
+
+```bash
+cd ~/crumbpanel
+docker compose up -d
+```
+
+No navegador:
+
+- Painel: `http://O-TEU-IP:8437` ou `http://localhost:8437`
+- API: `http://O-TEU-IP:5829/api`
+
+**Login padrão**
+
+- Email: `admin@mcpanel.local`
+- Senha: `admin123`  
+➡️ Muda a senha depois do primeiro login!
+
+**Problemas comuns**
+
+- Verificar contêineres e logs:
+  ```bash
+  docker compose ps
+  docker compose logs -f
+  ```
+
+---
+
