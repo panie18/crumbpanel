@@ -9,32 +9,32 @@ export class Server {
   @Column()
   name: string;
 
+  @Column({ default: 'java' })
+  serverType: 'java' | 'bedrock';
+
   @Column()
   version: string;
 
-  @Column({ default: 'java' })
-  serverType: string; // 'java' or 'bedrock'
+  @Column({ type: 'int', default: 2 })
+  maxRam: number;
 
-  @Column()
+  @Column({ type: 'int', default: 25565 })
   port: number;
 
+  @Column({ default: 'STOPPED' })
+  status: 'STOPPED' | 'STARTING' | 'RUNNING' | 'STOPPING';
+
   @Column({ nullable: true })
+  serverPath: string;
+
+  @Column({ nullable: true })
+  host: string;
+
+  @Column({ type: 'int', nullable: true })
   rconPort: number;
 
   @Column({ nullable: true })
   rconPassword: string;
-
-  @Column()
-  maxRam: number;
-
-  @Column({ default: 20 })
-  maxPlayers: number;
-
-  @Column({ default: 'STOPPED' })
-  status: string; // 'STOPPED', 'STARTING', 'RUNNING', 'STOPPING', 'ERROR', 'INSTALLING'
-
-  @Column({ nullable: true })
-  serverPath: string;
 
   @OneToMany(() => Player, (player) => player.serverId)
   players: Player[];

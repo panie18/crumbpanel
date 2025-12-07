@@ -1,11 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Server } from '../entities/server.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
 @Injectable()
 export class ServersService {
-  // In-Memory-Liste für Server-Metadaten (oder ersetze durch DB/Prisma)
-  private servers: any[] = [];
+  constructor(
+    @InjectRepository(Server)
+    private serverRepository: Repository<Server>,
+  ) {}
 
   // --- Helper: Basis-Pfade ---
 
@@ -24,11 +29,16 @@ export class ServersService {
   // --- Basis-CRUD für Server ---
 
   async getAll() {
-    return this.servers;
+    try {
+      return await this.serverRepository.find();
+    } catch (error) {
+      console.error('[ServersService] getAll error:', error);
+      return [];
+    }
   }
 
   async findById(id: string) {
-    const server = this.servers.find((s) => s.id === id);
+    const server = await this.serverRepository.findOne({ where: { id } });
     if (!server) {
       throw new NotFoundException(`Server ${id} not found`);
     }
@@ -36,38 +46,68 @@ export class ServersService {
   }
 
   async create(data: any) {
-    const id = Date.now().toString();
-    const server = {
-      id,
-      name: data.name ?? `Server-${id}`,
-      type: data.type ?? 'java',
-      memory: data.memory ?? 2048,
-      ...data,
-    };
+    console.log('[ServersService] Creating server:', data);
+    
+    try {
+      // Erstelle Server in DB
+      const server = this.serverRepository.create({
+        name: data.name || `Server-${Date.now()}`,
+        serverType: data.serverType || data.type || 'java',
+        version: data.version || '1.20.4',
+        maxRam: data.maxRam || data.memory || 2,
+        port: data.port || 25565,
+        status: 'STOPPED',
+      });
 
-    this.servers.push(server);
+      const savedServer = await this.serverRepository.save(server);
+      console.log('[ServersService] Server saved to DB:', savedServer.id);
 
-    // Server-Verzeichnis anlegen
-    await fs.mkdir(this.getServerPath(id), { recursive: true });
+      // Erstelle Server-Verzeichnis
+      const serverPath = this.getServerPath(savedServer.id);
+      await fs.mkdir(serverPath, { recursive: true });
 
-    // Beispiel: minimal server.properties anlegen
-    const propsPath = path.join(this.getServerPath(id), 'server.properties');
-    const propsContent = `motd=${server.name}\nmax-players=20\n`;
-    await fs.writeFile(propsPath, propsContent, 'utf-8');
+      // Update serverPath in DB
+      savedServer.serverPath = serverPath;
+      await this.serverRepository.save(savedServer);
 
-    return server;
+      // Erstelle server.properties
+      const propsPath = path.join(serverPath, 'server.properties');
+      const propsContent = `motd=${savedServer.name}
+max-players=20
+server-port=${savedServer.port}
+online-mode=true
+difficulty=easy
+gamemode=survival
+pvp=true
+`;
+      await fs.writeFile(propsPath, propsContent, 'utf-8');
+
+      // Erstelle eula.txt
+      const eulaPath = path.join(serverPath, 'eula.txt');
+      await fs.writeFile(eulaPath, 'eula=true\n', 'utf-8');
+
+      console.log('[ServersService] Server created successfully:', savedServer.id);
+      return savedServer;
+      
+    } catch (error) {
+      console.error('[ServersService] create error:', error);
+      throw error;
+    }
   }
 
   async deleteServer(id: string) {
-    const idx = this.servers.findIndex((s) => s.id === id);
-    if (idx === -1) {
-      throw new NotFoundException(`Server ${id} not found`);
-    }
-    this.servers.splice(idx, 1);
-
-    // Files löschen
+    const server = await this.findById(id);
+    
+    // Lösche Files
     const srvPath = this.getServerPath(id);
-    await fs.rm(srvPath, { recursive: true, force: true });
+    try {
+      await fs.rm(srvPath, { recursive: true, force: true });
+    } catch (error) {
+      console.warn('[ServersService] Could not delete server files:', error);
+    }
+
+    // Lösche aus DB
+    await this.serverRepository.delete(id);
 
     return { success: true };
   }
@@ -80,19 +120,23 @@ export class ServersService {
       const buf = await fs.readFile(logPath, 'utf-8');
       return buf;
     } catch {
-      return '> No logs available.';
+      return '> No logs available. Server has not been started yet.';
     }
   }
 
   async getServerFiles(id: string, relativePath: string = '.'): Promise<any[]> {
     const base = this.getServerPath(id);
     const fullPath = path.join(base, relativePath);
-    const entries = await fs.readdir(fullPath, { withFileTypes: true });
-    return entries.map((e) => ({
-      name: e.name,
-      isDirectory: e.isDirectory(),
-      path: path.join(relativePath, e.name).replace(/\\/g, '/'),
-    }));
+    try {
+      const entries = await fs.readdir(fullPath, { withFileTypes: true });
+      return entries.map((e) => ({
+        name: e.name,
+        isDirectory: e.isDirectory(),
+        path: path.join(relativePath, e.name).replace(/\\/g, '/'),
+      }));
+    } catch {
+      return [];
+    }
   }
 
   async downloadFile(id: string, filePath: string): Promise<Buffer> {
@@ -103,47 +147,59 @@ export class ServersService {
 
   // --- Start/Stop/Restart & Commands ---
 
-  // Platzhalter: hier würdest du z.B. dockerode verwenden
-  private async getContainer(id: string): Promise<{
-    start: () => Promise<void>;
-    stop: () => Promise<void>;
-    restart: () => Promise<void>;
-  }> {
-    // Dummy-Implementierung
-    return {
-      start: async () => {
-        console.log(`[SERVERSERVICE] start container for ${id}`);
-      },
-      stop: async () => {
-        console.log(`[SERVERSERVICE] stop container for ${id}`);
-      },
-      restart: async () => {
-        console.log(`[SERVERSERVICE] restart container for ${id}`);
-      },
-    };
-  }
-
   async startServer(id: string) {
-    const container = await this.getContainer(id);
-    await container.start();
+    const server = await this.findById(id);
+    
+    console.log('[ServersService] Starting server:', id);
+    
+    // Update status
+    server.status = 'STARTING';
+    await this.serverRepository.save(server);
+
+    // TODO: Hier echten Docker-Start oder Process-Spawn einbauen
+    // Für jetzt: Simuliere Start nach 2 Sekunden
+    setTimeout(async () => {
+      server.status = 'RUNNING';
+      await this.serverRepository.save(server);
+      console.log('[ServersService] Server started:', id);
+    }, 2000);
+
     return { success: true, status: 'starting' };
   }
 
   async stopServer(id: string) {
-    const container = await this.getContainer(id);
-    await container.stop();
+    const server = await this.findById(id);
+    
+    console.log('[ServersService] Stopping server:', id);
+    
+    // Update status
+    server.status = 'STOPPING';
+    await this.serverRepository.save(server);
+
+    // TODO: Hier echten Stop einbauen
+    setTimeout(async () => {
+      server.status = 'STOPPED';
+      await this.serverRepository.save(server);
+      console.log('[ServersService] Server stopped:', id);
+    }, 2000);
+
     return { success: true, status: 'stopping' };
   }
 
   async restartServer(id: string) {
-    const container = await this.getContainer(id);
-    await container.restart();
+    await this.stopServer(id);
+    
+    // Warte 3 Sekunden
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    await this.startServer(id);
+    
     return { success: true, status: 'restarting' };
   }
 
   async sendCommand(id: string, command: string) {
-    // Hier würdest du RCON oder Websocket an den MC-Server nutzen.
-    console.log(`[SERVERSERVICE] Command to ${id}: ${command}`);
+    // TODO: RCON oder stdin an Process
+    console.log(`[ServersService] Command to ${id}: ${command}`);
     return { success: true };
   }
 
@@ -161,7 +217,8 @@ export class ServersService {
   }
 
   async installPlugin(id: string, data: any) {
-    console.log(`Installing plugin ${data.name} for server ${id}`);
+    console.log(`[ServersService] Installing plugin ${data.name} for server ${id}`);
+    // TODO: Download von URL
     return { success: true, message: 'Plugin installation simulated' };
   }
 
@@ -218,7 +275,14 @@ export class ServersService {
       });
       return props;
     } catch {
-      return {};
+      // Return default properties wenn File nicht existiert
+      return {
+        'motd': 'A Minecraft Server',
+        'max-players': '20',
+        'gamemode': 'survival',
+        'difficulty': 'easy',
+        'pvp': 'true',
+      };
     }
   }
 
