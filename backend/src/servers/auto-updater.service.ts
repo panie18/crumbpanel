@@ -54,8 +54,8 @@ export class AutoUpdaterService {
     }
 
     // 1. Backup current server JAR
-    const currentJar = path.join(server.serverPath, `minecraft-server-${server.version}.jar`);
-    const backupJar = path.join(server.serverPath, `minecraft-server-${server.version}.jar.backup`);
+    const currentJar = path.join(server.serverPath, 'server.jar');
+    const backupJar = path.join(server.serverPath, 'server.jar.backup');
     
     if (fs.existsSync(currentJar)) {
       fs.copyFileSync(currentJar, backupJar);

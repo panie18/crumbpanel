@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as https from 'https';
 
 @Injectable()
 export class MinecraftVersionService {
@@ -7,7 +10,7 @@ export class MinecraftVersionService {
   private lastFetch: number = 0;
   private CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-  private async fetchVersionsManifest(): Promise<{ versions: any[] }> {
+  private async fetchVersionsManifest(): Promise<{ latest?: { release: string; snapshot: string }; versions: any[] }> {
     const now = Date.now();
     
     // Check cache
@@ -100,5 +103,86 @@ export class MinecraftVersionService {
     } catch (error) {
       return [];
     }
+  }
+
+  /**
+   * Download Minecraft server JAR file
+   */
+  async downloadServerJar(version: string, serverPath: string): Promise<string> {
+    console.log(`📥 [VERSIONS] Downloading server JAR for version ${version}...`);
+    
+    try {
+      const manifest = await this.fetchVersionsManifest();
+      const versionInfo = manifest.versions.find((v: any) => v.id === version);
+      
+      if (!versionInfo) {
+        throw new Error(`Version ${version} not found in manifest`);
+      }
+
+      // Fetch version-specific data
+      const versionData = await this.fetchJson(versionInfo.url);
+      const serverDownload = versionData.downloads?.server;
+      
+      if (!serverDownload) {
+        throw new Error(`Server JAR not available for version ${version}`);
+      }
+
+      // Download server JAR
+      const jarPath = path.join(serverPath, 'server.jar');
+      await this.downloadFile(serverDownload.url, jarPath);
+      
+      console.log(`✅ [VERSIONS] Server JAR downloaded successfully`);
+      return jarPath;
+      
+    } catch (error) {
+      console.error(`❌ [VERSIONS] Failed to download server JAR:`, error);
+      throw error;
+    }
+  }
+
+  private async fetchJson(url: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      https.get(url, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data));
+          } catch (error) {
+            reject(new Error(`Failed to parse JSON: ${error.message}`));
+          }
+        });
+      }).on('error', reject);
+    });
+  }
+
+  private async downloadFile(url: string, filePath: string): Promise<void> {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    return new Promise((resolve, reject) => {
+      const file = fs.createWriteStream(filePath);
+      
+      https.get(url, (response) => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+          return;
+        }
+        
+        response.pipe(file);
+        
+        file.on('finish', () => {
+          file.close();
+          resolve();
+        });
+        
+        file.on('error', (error) => {
+          fs.unlink(filePath, () => {});
+          reject(error);
+        });
+      }).on('error', reject);
+    });
   }
 }
