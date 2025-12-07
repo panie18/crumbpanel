@@ -39,4 +39,14 @@ export class MinecraftVersionService {
       return matchesQuery && matchesType;
     });
   }
+
+  // --- NEU: downloadServerJar für auto-updater.service.ts ---
+  async downloadServerJar(version: string, targetPath: string): Promise<void> {
+    // Platzhalter: Hier würdest du die Server-JAR von Mojang herunterladen.
+    // Beispiel: https://launcher.mojang.com/v1/objects/[hash]/server.jar
+    console.log(`[MinecraftVersionService] Downloading server.jar for version ${version} to ${targetPath}`);
+    // TODO: Implementiere echten Download mit fetch/axios und fs.writeFile
+    // Für jetzt nur Mock, damit es kompiliert:
+    return Promise.resolve();
+  }
 }
