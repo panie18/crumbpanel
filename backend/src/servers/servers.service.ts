@@ -4,7 +4,7 @@ import * as path from 'path';
 
 @Injectable()
 export class ServersService {
-  // Einfache In-Memory-Liste für Metadaten (oder ersetze durch DB/Prisma)
+  // In-Memory-Liste für Server-Metadaten (oder ersetze durch DB/Prisma)
   private servers: any[] = [];
 
   // --- Helper: Basis-Pfade ---
@@ -21,10 +21,9 @@ export class ServersService {
     return path.join(this.getServersRoot(), id);
   }
 
-  // --- Basis-CRUD für Server (von Controller verlangt) ---
+  // --- Basis-CRUD für Server ---
 
   async getAll() {
-    // Falls du eine DB hast, hier gegen DB tauschen.
     return this.servers;
   }
 
@@ -37,7 +36,6 @@ export class ServersService {
   }
 
   async create(data: any) {
-    // Dummy-ID generieren; in echter App z.B. UUID verwenden
     const id = Date.now().toString();
     const server = {
       id,
@@ -106,9 +104,12 @@ export class ServersService {
   // --- Start/Stop/Restart & Commands ---
 
   // Platzhalter: hier würdest du z.B. dockerode verwenden
-  private async getContainer(id: string): Promise<{ start: () => Promise<void>; stop: () => Promise<void>; restart: () => Promise<void> }> {
-    // Dummy-Implementierung, damit TypeScript zufrieden ist.
-    // Ersetze später durch echten Docker-Code.
+  private async getContainer(id: string): Promise<{
+    start: () => Promise<void>;
+    stop: () => Promise<void>;
+    restart: () => Promise<void>;
+  }> {
+    // Dummy-Implementierung
     return {
       start: async () => {
         console.log(`[SERVERSERVICE] start container for ${id}`);
@@ -146,7 +147,7 @@ export class ServersService {
     return { success: true };
   }
 
-  // --- Plugins (bereits von dir im Controller genutzt) ---
+  // --- Plugins ---
 
   async getPlugins(id: string) {
     const pluginsDir = path.join(this.getServerPath(id), 'plugins');
@@ -161,7 +162,6 @@ export class ServersService {
 
   async installPlugin(id: string, data: any) {
     console.log(`Installing plugin ${data.name} for server ${id}`);
-    // TODO: tatsächlichen Download/Copy implementieren
     return { success: true, message: 'Plugin installation simulated' };
   }
 
@@ -213,4 +213,26 @@ export class ServersService {
       content.split('\n').forEach((line) => {
         if (line && !line.startsWith('#') && line.includes('=')) {
           const [key, ...val] = line.split('=');
-          if
+          if (key) props[key.trim()] = val.join('=').trim();
+        }
+      });
+      return props;
+    } catch {
+      return {};
+    }
+  }
+
+  async updateProperties(id: string, props: any) {
+    const propsPath = path.join(this.getServerPath(id), 'server.properties');
+    let content = '# Minecraft server properties\n# Modified by CrumbPanel\n';
+    try {
+      for (const [key, value] of Object.entries(props)) {
+        content += `${key}=${value}\n`;
+      }
+      await fs.writeFile(propsPath, content, 'utf-8');
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
+  }
+}
