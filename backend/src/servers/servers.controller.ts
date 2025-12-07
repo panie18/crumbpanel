@@ -94,49 +94,48 @@ export class ServersController {
   @Get(':id/plugins')
   async getPlugins(@Param('id') id: string) {
     console.log('🧩 [CONTROLLER] Getting plugins for server:', id);
-    // Cast to any to avoid build errors if method missing in service
-    return (this.serversService as any).getPlugins ? (this.serversService as any).getPlugins(id) : [];
+    return this.serversService.getPlugins(id);
   }
 
   @Post(':id/plugins')
   async installPlugin(@Param('id') id: string, @Body() body: any) {
     console.log('⬇️ [CONTROLLER] Installing plugin:', id, body);
-    return (this.serversService as any).installPlugin ? (this.serversService as any).installPlugin(id, body) : { success: false, message: 'Not implemented' };
+    return this.serversService.installPlugin(id, body);
   }
 
   @Delete(':id/plugins/:name')
   async deletePlugin(@Param('id') id: string, @Param('name') name: string) {
     console.log('🗑️ [CONTROLLER] Deleting plugin:', id, name);
-    return (this.serversService as any).deletePlugin ? (this.serversService as any).deletePlugin(id, name) : { success: false };
+    return this.serversService.deletePlugin(id, name);
   }
 
   @Get(':id/automations')
   async getAutomations(@Param('id') id: string) {
     console.log('🤖 [CONTROLLER] Getting automations:', id);
-    return (this.serversService as any).getAutomations ? (this.serversService as any).getAutomations(id) : [];
+    return this.serversService.getAutomations(id);
   }
 
   @Post(':id/automations')
   async createAutomation(@Param('id') id: string, @Body() body: any) {
     console.log('🤖 [CONTROLLER] Creating automation:', id);
-    return (this.serversService as any).createAutomation ? (this.serversService as any).createAutomation(id, body) : { success: false };
+    return this.serversService.createAutomation(id, body);
   }
 
   @Delete(':id/automations/:autoId')
   async deleteAutomation(@Param('id') id: string, @Param('autoId') autoId: string) {
-    return (this.serversService as any).deleteAutomation ? (this.serversService as any).deleteAutomation(id, autoId) : { success: false };
+    return this.serversService.deleteAutomation(id, autoId);
   }
 
   @Get(':id/properties')
   async getProperties(@Param('id') id: string) {
     console.log('⚙️ [CONTROLLER] Getting server properties:', id);
-    return (this.serversService as any).getProperties ? (this.serversService as any).getProperties(id) : {};
+    return this.serversService.getProperties(id);
   }
 
   @Post(':id/properties')
   async updateProperties(@Param('id') id: string, @Body() body: any) {
     console.log('⚙️ [CONTROLLER] Updating server properties:', id);
-    return (this.serversService as any).updateProperties ? (this.serversService as any).updateProperties(id, body) : { success: false };
+    return this.serversService.updateProperties(id, body);
   }
 
   // ----------------------------------------------
