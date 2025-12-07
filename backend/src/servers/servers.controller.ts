@@ -107,7 +107,7 @@ export class ServersController {
   @Get('versions/all')
   async getAllVersions() {
     console.log('📋 [CONTROLLER] Getting all Minecraft versions...');
-    return this.versionService.getReleaseVersions(30);
+    return this.versionService.getReleaseVersions();
   }
 
   @Get('versions/search')
