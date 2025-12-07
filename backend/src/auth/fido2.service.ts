@@ -38,16 +38,16 @@ export class Fido2Service {
 
   /**
    * Generate credential request options (for authentication)
-   * Using 'any' type to prevent TypeScript errors when controller passes an array
+   * Fix: Accept proper types instead of 'any'
    */
-  async generateCredentialRequestOptions(input: any, username?: string): Promise<any> {
-    console.log(`[Fido2Service] Generating credential request options`);
+  async generateCredentialRequestOptions(username: string, allowCredentials?: any[]): Promise<any> {
+    console.log(`[Fido2Service] Generating credential request options for ${username}`);
     
     return {
       challenge: Buffer.from(Math.random().toString()).toString('base64'),
       timeout: 60000,
       userVerification: 'preferred',
-      allowCredentials: []
+      allowCredentials: allowCredentials || []
     };
   }
 
