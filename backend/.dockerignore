@@ -20,3 +20,7 @@ src/auth/strategies
 src/servers/dto
 src/servers/rcon.service.ts
 src/index.ts
+# WICHTIG: Alte fehlerhafte Datei ausschließen
+src/server
+src/server/
+src/server/**
