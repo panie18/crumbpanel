@@ -51,3 +51,18 @@ coverage/
 # Prisma
 prisma/migrations/
 !prisma/migrations/.gitkeep
+
+# OLD BROKEN FILES - DO NOT COMMIT
+backend/src/server/
+backend/src/audit/
+backend/src/cloud-backup/
+backend/src/files/
+backend/src/metrics/
+backend/src/players/
+backend/src/websocket/
+backend/src/auth/dto/
+backend/src/auth/guards/
+backend/src/auth/strategies/
+backend/src/servers/dto/
+backend/src/servers/rcon.service.ts
+backend/src/index.ts
