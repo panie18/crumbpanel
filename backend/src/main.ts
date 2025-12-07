@@ -1,50 +1,44 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function bootstrap() {
   console.log('🚀 Starting CrumbPanel Backend...');
 
-  try {
-    const app = await NestFactory.create(AppModule, {
-      cors: true,
-      logger: ['log', 'error', 'warn', 'debug', 'verbose'],
-    });
-
-    // Enable CORS
-    app.enableCors({
-      origin: [
-        'http://localhost:3000',
-        'http://localhost:8437',
-        /^http:\/\/.*:8437$/,
-        /^http:\/\/.*:3000$/,
-      ],
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    });
-    
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-    app.setGlobalPrefix('api');
-
-    const port = parseInt(process.env.PORT || '5829', 10);
-    
-    await app.listen(port, '0.0.0.0');
-    
-    console.log(`
-╔════════════════════════════════════════════════════════╗
-║  ✅ Backend is READY                                  ║
-║  🌐 http://0.0.0.0:${port}                             ║
-║  📡 API: http://localhost:${port}/api                  ║
-║  💾 Database: SQLite ./data/crumbpanel.db              ║
-║  🔐 JWT Auth: ENABLED                                  ║
-╚════════════════════════════════════════════════════════╝
-    `);
-    
-  } catch (error) {
-    console.error('❌ Failed to start backend:', error);
-    process.exit(1);
+  // Ensure data directory exists
+  const dataDir = path.join(process.cwd(), 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    console.log('📁 Created data directory');
   }
+
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: ['http://localhost:8437', 'http://localhost:3000'],
+      credentials: true,
+    },
+  });
+
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+  }));
+
+  const port = process.env.PORT || 5829;
+  await app.listen(port, '0.0.0.0');
+
+  console.log('');
+  console.log('╔════════════════════════════════════════════════════════╗');
+  console.log('║  ✅ Backend is READY                                  ║');
+  console.log(`║  🌐 http://0.0.0.0:${port}                             ║`);
+  console.log(`║  📡 API: http://localhost:${port}/api                  ║`);
+  console.log('║  💾 Database: SQLite ./data/crumbpanel.db              ║');
+  console.log('║  🔐 JWT Auth: ENABLED                                  ║');
+  console.log('╚════════════════════════════════════════════════════════╝');
+  console.log('');
 }
 
 bootstrap();
