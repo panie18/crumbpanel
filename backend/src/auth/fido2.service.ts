@@ -38,8 +38,10 @@ export class Fido2Service {
 
   /**
    * Generate credential request options (for authentication)
+   * @param userId - User ID
+   * @param username - Username (optional second parameter)
    */
-  async generateCredentialRequestOptions(userId: string): Promise<any> {
+  async generateCredentialRequestOptions(userId: string, username?: string): Promise<any> {
     console.log(`[Fido2Service] Generating credential request for user ${userId}`);
     
     return {
@@ -59,9 +61,10 @@ export class Fido2Service {
 
   /**
    * Verify authenticator assertion (authentication response)
+   * @param response - Authentication response from client
    */
-  async verifyAuthenticatorAssertion(response: any, userId: string): Promise<boolean> {
-    console.log(`[Fido2Service] Verifying authenticator assertion for user ${userId}`);
+  async verifyAuthenticatorAssertion(response: any): Promise<boolean> {
+    console.log(`[Fido2Service] Verifying authenticator assertion`);
     return true;
   }
 
