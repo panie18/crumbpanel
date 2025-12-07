@@ -39,7 +39,7 @@ cd "$INSTALL_DIR"
 echo "📁 Changed to: $(pwd)"
 echo ""
 
-# ⚠️ NEU: Alte fehlerhafte Dateien löschen
+# ⚠️ WICHTIG: Alte fehlerhafte Dateien löschen
 echo "🧹 CLEANING OLD BROKEN FILES..."
 rm -rf backend/src/server/ 2>/dev/null || true
 rm -rf backend/src/audit/ 2>/dev/null || true
@@ -48,6 +48,12 @@ rm -rf backend/src/files/ 2>/dev/null || true
 rm -rf backend/src/metrics/ 2>/dev/null || true
 rm -rf backend/src/players/ 2>/dev/null || true
 rm -rf backend/src/websocket/ 2>/dev/null || true
+rm -rf backend/src/auth/dto/ 2>/dev/null || true
+rm -rf backend/src/auth/guards/ 2>/dev/null || true
+rm -rf backend/src/auth/strategies/ 2>/dev/null || true
+rm -rf backend/src/servers/dto/ 2>/dev/null || true
+rm -f backend/src/servers/rcon.service.ts 2>/dev/null || true
+rm -f backend/src/index.ts 2>/dev/null || true
 echo "✅ Cleanup complete"
 echo ""
 
