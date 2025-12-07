@@ -51,10 +51,10 @@ export class AuthService {
     email: string;
     password: string;
   }) {
+    console.log('🚀 [AUTH] Starting initial setup...');
+    console.log('🚀 [AUTH] Setup data:', { username: setupData.username, email: setupData.email });
+    
     try {
-      console.log('🚀 [AUTH] Starting initial setup...');
-      console.log('🚀 [AUTH] Setup data:', { username: setupData.username, email: setupData.email });
-      
       // Check if setup is already done
       console.log('🔍 [AUTH] Checking current user count...');
       const userCount = await this.userRepository.count();
@@ -94,29 +94,31 @@ export class AuthService {
       console.log('🔐 [AUTH] Hashing password...');
       const hashedPassword = await bcrypt.hash(setupData.password, 10);
 
-      // Create user
-      console.log('💾 [AUTH] Creating user in database...');
-      const user = this.userRepository.create({
+      // Create admin user (KORREKTUR: create gibt einzelnes Objekt zurück)
+      const adminUser = this.userRepository.create({
         username: setupData.username,
-        name: setupData.username, // Use username as name initially
         email: setupData.email,
         password: hashedPassword,
-        role: 'ADMIN',
+        role: 'admin',  // Kleinschreibung!
+        twoFactorEnabled: false,
       });
 
-      const savedUser = await this.userRepository.save(user);
-      console.log('✅ [AUTH] User created with ID:', savedUser.id);
+      const savedUser = await this.userRepository.save(adminUser);
 
-      // Generate token
-      console.log('🎫 [AUTH] Generating JWT token...');
+      console.log('✅ [AUTH] Admin user created with ID:', savedUser.id);
+      console.log('✅ [AUTH] Email:', savedUser.email);
+      console.log('✅ [AUTH] Setup completed successfully!');
+
+      // Generate JWT token
       const token = this.jwtService.sign({
         sub: savedUser.id,
         email: savedUser.email,
+        username: savedUser.username,
+        role: savedUser.role
       });
-      console.log('✅ [AUTH] JWT token generated');
 
-      // WICHTIG: Korrekte Response-Struktur
-      const response = {
+      return {
+        success: true,
         message: 'Setup completed successfully',
         user: {
           id: savedUser.id,
@@ -126,13 +128,9 @@ export class AuthService {
         },
         token,
       };
-
-      console.log('🎉 [AUTH] Setup completed successfully with response:', response);
-      return response;
-
     } catch (error) {
       console.error('💥 [AUTH] Setup failed with error:', error);
-      throw error;
+      throw new Error(`Setup failed: ${error.message}`);
     }
   }
 
