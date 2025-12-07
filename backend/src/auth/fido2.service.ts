@@ -38,12 +38,22 @@ export class Fido2Service {
 
   /**
    * Generate credential request options (for authentication)
-   * @param userId - User ID
-   * @param username - Username (optional second parameter)
+   * Accepts either a userId string OR an array [userId, username]
    */
-  async generateCredentialRequestOptions(userId: string, username?: string): Promise<any> {
-    console.log(`[Fido2Service] Generating credential request for user ${userId}`);
+  async generateCredentialRequestOptions(userId: string | string[], username?: string): Promise<any> {
+    // Handle array input: [userId, username]
+    if (Array.isArray(userId)) {
+      const [uid, uname] = userId;
+      console.log(`[Fido2Service] Generating credential request for user ${uid} (${uname})`);
+      return this.generateRequestOptions(uid);
+    }
     
+    // Handle string input: userId
+    console.log(`[Fido2Service] Generating credential request for user ${userId}`);
+    return this.generateRequestOptions(userId);
+  }
+
+  private generateRequestOptions(userId: string): any {
     return {
       challenge: Buffer.from(Math.random().toString()).toString('base64'),
       timeout: 60000,
@@ -61,7 +71,6 @@ export class Fido2Service {
 
   /**
    * Verify authenticator assertion (authentication response)
-   * @param response - Authentication response from client
    */
   async verifyAuthenticatorAssertion(response: any): Promise<boolean> {
     console.log(`[Fido2Service] Verifying authenticator assertion`);
