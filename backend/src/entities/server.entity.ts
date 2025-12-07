@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Player } from './player.entity';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('servers')
 export class Server {
@@ -35,9 +34,6 @@ export class Server {
 
   @Column({ nullable: true })
   rconPassword: string;
-
-  @OneToMany(() => Player, (player) => player.serverId)
-  players: Player[];
 
   @CreateDateColumn()
   createdAt: Date;

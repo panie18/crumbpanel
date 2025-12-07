@@ -49,7 +49,7 @@ export class ServersService {
     console.log('[ServersService] Creating server:', data);
     
     try {
-      // Erstelle Server in DB
+      // Erstelle Server-Entity (korrigiert: create gibt EINZELNES Objekt zurück)
       const server = this.serverRepository.create({
         name: data.name || `Server-${Date.now()}`,
         serverType: data.serverType || data.type || 'java',
@@ -152,15 +152,13 @@ pvp=true
     
     console.log('[ServersService] Starting server:', id);
     
-    // Update status
-    server.status = 'STARTING';
-    await this.serverRepository.save(server);
+    // Update status (korrigiert: TypeORM update syntax)
+    await this.serverRepository.update({ id }, { status: 'STARTING' });
 
     // TODO: Hier echten Docker-Start oder Process-Spawn einbauen
     // Für jetzt: Simuliere Start nach 2 Sekunden
     setTimeout(async () => {
-      server.status = 'RUNNING';
-      await this.serverRepository.save(server);
+      await this.serverRepository.update({ id }, { status: 'RUNNING' });
       console.log('[ServersService] Server started:', id);
     }, 2000);
 
@@ -173,13 +171,11 @@ pvp=true
     console.log('[ServersService] Stopping server:', id);
     
     // Update status
-    server.status = 'STOPPING';
-    await this.serverRepository.save(server);
+    await this.serverRepository.update({ id }, { status: 'STOPPING' });
 
     // TODO: Hier echten Stop einbauen
     setTimeout(async () => {
-      server.status = 'STOPPED';
-      await this.serverRepository.save(server);
+      await this.serverRepository.update({ id }, { status: 'STOPPED' });
       console.log('[ServersService] Server stopped:', id);
     }, 2000);
 

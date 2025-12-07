@@ -163,28 +163,46 @@ docker compose ps
 
 Navigiere zu `http://DEINE-IP:8437` oder `http://localhost:8437`
 
-### 2. Mit Standard-Credentials einloggen
+### 2. Setup-Wizard abschließen
 
-```
-Email:    admin@mcpanel.local
-Passwort: admin123
-```
+Beim ersten Besuch erscheint automatisch der **Setup-Wizard**:
 
-### 3. Passwort sofort ändern
+**Schritt 1: Admin-Account erstellen**
+
+1. Gib deine **E-Mail-Adresse** ein
+2. Wähle ein **starkes Passwort**:
+   - Mindestens 8 Zeichen (empfohlen: 12+)
+   - Groß- und Kleinbuchstaben
+   - Zahlen und Sonderzeichen
+   - Beispiel: `MyPanel2024!Secure#`
+3. Bestätige das Passwort
+4. Klicke auf **"Setup abschließen"**
+
+**Schritt 2: Einloggen**
+
+1. Gib deine E-Mail ein
+2. Gib dein Passwort ein
+3. Klicke auf **"Login"**
+
+⚠️ **Wichtig:** Es gibt **kein Standard-Passwort**! Du legst beim ersten Start dein eigenes Passwort fest.
+
+### 3. 2FA aktivieren (optional, aber empfohlen)
+
+Nach dem ersten Login:
 
 1. Klicke oben rechts auf dein Profil
 2. Wähle "Settings" oder "Einstellungen"
-3. Unter "Security" → "Change Password"
-4. Neues, sicheres Passwort eingeben
-5. Speichern
+3. Unter "Security" → "Enable Two-Factor Authentication"
+4. Scanne den QR-Code mit einer Authenticator-App (z.B. Google Authenticator, Authy)
+5. Gib den 6-stelligen Bestätigungscode ein
+6. Speichere die **Backup-Codes** sicher!
 
-### 4. 2FA aktivieren (optional, aber empfohlen)
-
-1. In den Settings → "Security"
-2. "Enable Two-Factor Authentication"
-3. QR-Code mit einer Authenticator-App scannen (z.B. Google Authenticator, Authy)
-4. Bestätigungscode eingeben
-5. Backup-Codes sicher speichern!
+**Unterstützte Authenticator-Apps:**
+- Google Authenticator (iOS/Android)
+- Microsoft Authenticator (iOS/Android)
+- Authy (iOS/Android/Desktop)
+- 1Password
+- Bitwarden
 
 ## Nächste Schritte
 

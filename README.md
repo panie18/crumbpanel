@@ -35,6 +35,12 @@ This script will:
 - 🌐 Frontend: `http://localhost:8437`
 - 🔌 Backend API: `http://localhost:5829/api`
 
+**First-time setup:**
+- 🧙 Complete the **Setup Wizard** on first visit
+- 📧 Create your admin account with email and password
+- 🔐 Choose a **strong password** (min. 8 characters)
+- ✅ Panel is ready to use!
+
 **Default login credentials:**
 - Email: `admin@mcpanel.local`
 - Password: `admin123`
@@ -109,11 +115,17 @@ Open your browser and navigate to:
 - Frontend: `http://localhost:8437`
 - Backend API: `http://localhost:5829/api`
 
-**Default login credentials:**
-- Email: `admin@mcpanel.local`
-- Password: `admin123`
+**First-time setup:**
+1. Open `http://localhost:8437`
+2. The **Setup Wizard** will automatically appear
+3. Create your admin account:
+   - Enter your **email address**
+   - Choose a **strong password** (minimum 8 characters)
+   - Confirm password
+4. Click **"Complete Setup"**
+5. You're done! Login with your credentials
 
-⚠️ **Important:** Change the admin password after first login!
+⚠️ **Security Tip:** Use a unique, strong password with at least 12 characters, including uppercase, lowercase, numbers and symbols.
 
 ## 📦 Technology Stack
 
@@ -346,11 +358,17 @@ docker compose up -d
 - Panel: `http://DEINE-IP:8437` oder `http://localhost:8437`
 - API (optional): `http://DEINE-IP:5829/api`
 
-**Standard-Login**
+**Ersteinrichtung (Setup-Wizard)**
 
-- E-Mail: `admin@mcpanel.local`
-- Passwort: `admin123`  
-➡️ Sofort nach dem ersten Login ändern!
+Beim ersten Besuch erscheint automatisch der **Setup-Wizard**：
+
+1. 📧 **E-Mail-Adresse** eingeben
+2. 🔐 **Starkes Passwort** wählen (mind. 8 Zeichen)
+3. ✅ Passwort bestätigen
+4. ➡️ Klicke auf **"Setup abschließen"**
+5. 🎉 Fertig! Du kannst dich jetzt einloggen
+
+⚠️ **Sicherheits-Tipp:** Verwende ein einzigartiges Passwort mit mindestens 12 Zeichen (Groß-/Kleinbuchstaben, Zahlen, Sonderzeichen).
 
 **Häufige Probleme**
 
@@ -400,11 +418,17 @@ Open in your browser:
 - Panel: `http://YOUR-IP:8437` or `http://localhost:8437`
 - API (optional): `http://YOUR-IP:5829/api`
 
-**Default login**
+**First-time Setup (Setup Wizard)**
 
-- Email: `admin@mcpanel.local`
-- Password: `admin123`  
-➡️ Change this immediately after the first login!
+The **Setup Wizard** appears automatically on first visit:
+
+1. 📧 Enter your **email address**
+2. 🔐 Choose a **strong password** (min. 8 characters)
+3. ✅ Confirm password
+4. ➡️ Click **"Complete Setup"**
+5. 🎉 Done! You can now login
+
+⚠️ **Security Tip:** Use a unique password with at least 12 characters (uppercase, lowercase, numbers, symbols).
 
 **Common issues**
 
@@ -438,26 +462,32 @@ Open in your browser:
 
 ### 🇫🇷 Français – Guide rapide & Dépannage
 
-**Qu’est-ce que CrumbPanel ?**  
+**Qu'est-ce que CrumbPanel ?**  
 CrumbPanel est un panneau web pour gérer des serveurs Minecraft (démarrage/arrêt, console, plugins, automatisations, paramètres, etc.).
 
-**Démarrage après l’installation**
+**Démarrage après l'installation**
 
 ```bash
 cd ~/crumbpanel
 docker compose up -d
 ```
 
-Dans votre navigateur :
+Dans votre navigateur :
 
-- Panel : `http://VOTRE-IP:8437` ou `http://localhost:8437`
-- API : `http://VOTRE-IP:5829/api`
+- Panel : `http://VOTRE-IP:8437` ou `http://localhost:8437`
+- API : `http://VOTRE-IP:5829/api`
 
-**Identifiants par défaut**
+**Configuration initiale (Assistant de configuration)**
 
-- Email : `admin@mcpanel.local`
-- Mot de passe : `admin123`  
-➡️ Changez le mot de passe après la première connexion !
+L'**Assistant de configuration** apparaît automatiquement lors de la première visite :
+
+1. 📧 Entrez votre **adresse e-mail**
+2. 🔐 Choisissez un **mot de passe fort** (min. 8 caractères)
+3. ✅ Confirmez le mot de passe
+4. ➡️ Cliquez sur **"Terminer la configuration"**
+5. 🎉 Terminé ! Vous pouvez maintenant vous connecter
+
+⚠️ **Conseil de sécurité :** Utilisez un mot de passe unique d'au moins 12 caractères (majuscules, minuscules, chiffres, symboles).
 
 **Problèmes fréquents**
 
@@ -493,11 +523,17 @@ En el navegador:
 - Panel: `http://TU-IP:8437` o `http://localhost:8437`
 - API: `http://TU-IP:5829/api`
 
-**Credenciales por defecto**
+**Configuración inicial (Asistente de configuración)**
 
-- Email: `admin@mcpanel.local`
-- Contraseña: `admin123`  
-➡️ ¡Cambia la contraseña tras el primer inicio de sesión!
+El **Asistente de configuración** aparece automáticamente en la primera visita:
+
+1. 📧 Introduce tu **dirección de correo**
+2. 🔐 Elige una **contraseña fuerte** (mín. 8 caracteres)
+3. ✅ Confirma la contraseña
+4. ➡️ Haz clic en **"Completar configuración"**
+5. 🎉 ¡Listo! Ya puedes iniciar sesión
+
+⚠️ **Consejo de seguridad:** Usa una contraseña única con al menos 12 caracteres (mayúsculas, minúsculas, números, símbolos).
 
 **Problemas típicos**
 
@@ -533,26 +569,17 @@ docker compose up -d
 - 面板: `http://你的IP:8437` 或 `http://localhost:8437`
 - API: `http://你的IP:5829/api`
 
-**默认账号**
+**首次配置（配置向导）**
 
-- 邮箱: `admin@mcpanel.local`
-- 密码: `admin123`  
-➡️ 第一次登录后请立即修改密码！
+首次访问时会自动显示**配置向导**：
 
-**常见问题**
+1. 📧 输入你的**电子邮件地址**
+2. 🔐 选择一个**强密码**（至少8个字符）
+3. ✅ 确认密码
+4. ➡️ 点击**"完成配置"**
+5. 🎉 完成！现在可以登录了
 
-- 查看容器状态和日志：
-  ```bash
-  docker compose ps
-  docker compose logs -f
-  ```
-
-- 修改代码后重新构建：
-  ```bash
-  docker compose down
-  docker compose build --no-cache
-  docker compose up -d
-  ```
+⚠️ **安全提示：** 使用至少12个字符的唯一密码（大小写字母、数字、符号）。
 
 ---
 
@@ -573,19 +600,17 @@ docker compose up -d
 - パネル: `http://あなたのIP:8437` または `http://localhost:8437`
 - API: `http://あなたのIP:5829/api`
 
-**デフォルトログイン**
+**初期設定（セットアップウィザード）**
 
-- メール: `admin@mcpanel.local`
-- パスワード: `admin123`  
-➡️ 初回ログイン後に必ず変更してください。
+初回訪問時に**セットアップウィザード**が自動的に表示されます：
 
-**よくある問題**
+1. 📧 **メールアドレス**を入力
+2. 🔐 **強力なパスワード**を選択（最低8文字）
+3. ✅ パスワードを確認
+4. ➡️ **「セットアップ完了」**をクリック
+5. 🎉 完了！ログインできます
 
-- コンテナとログを確認：
-  ```bash
-  docker compose ps
-  docker compose logs -f
-  ```
+⚠️ **セキュリティのヒント：** 最低12文字のユニークなパスワードを使用してください（大文字、小文字、数字、記号）。
 
 ---
 
@@ -606,19 +631,17 @@ In je browser:
 - Paneel: `http://JOUW-IP:8437` of `http://localhost:8437`
 - API: `http://JOUW-IP:5829/api`
 
-**Standaard login**
+**Eerste configuratie (Setup Wizard)**
 
-- E‑mail: `admin@mcpanel.local`
-- Wachtwoord: `admin123`  
-➡️ Wachtwoord direct na de eerste login wijzigen!
+De **Setup Wizard** verschijnt automatisch bij je eerste bezoek:
 
-**Veelvoorkomende problemen**
+1. 📧 Voer je **e-mailadres** in
+2. 🔐 Kies een **sterk wachtwoord** (min. 8 tekens)
+3. ✅ Bevestig het wachtwoord
+4. ➡️ Klik op **"Setup voltooien"**
+5. 🎉 Klaar! Je kunt nu inloggen
 
-- Containerstatus:
-  ```bash
-  docker compose ps
-  docker compose logs -f
-  ```
+⚠️ **Beveiligingstip:** Gebruik een uniek wachtwoord van minimaal 12 tekens (hoofdletters, kleine letters, cijfers, symbolen).
 
 ---
 
@@ -639,11 +662,17 @@ I browseren:
 - Panel: `http://DIN-IP:8437` eller `http://localhost:8437`
 - API: `http://DIN-IP:5829/api`
 
-**Standard-login**
+**Første opsætning (Setup Wizard)**
 
-- Email: `admin@mcpanel.local`
-- Kodeord: `admin123`  
-➡️ Skift kodeord efter første login!
+**Setup Wizard** vises automatisk ved første besøg:
+
+1. 📧 Indtast din **e-mailadresse**
+2. 🔐 Vælg en **stærk adgangskode** (min. 8 tegn)
+3. ✅ Bekræft adgangskoden
+4. ➡️ Klik på **"Fuldfør opsætning"**
+5. 🎉 Færdig! Du kan nu logge ind
+
+⚠️ **Sikkerhedstip:** Brug en unik adgangskode på mindst 12 tegn (store bogstaver, små bogstaver, tal, symboler).
 
 ---
 
@@ -664,11 +693,17 @@ I nettleseren:
 - Panel: `http://DIN-IP:8437` eller `http://localhost:8437`
 - API: `http://DIN-IP:5829/api`
 
-**Standard pålogging**
+**Førstegangsoppsett (Setup Wizard)**
 
-- E‑post: `admin@mcpanel.local`
-- Passord: `admin123`  
-➡️ Bytt passord etter første innlogging!
+**Setup Wizard** vises automatisk ved første besøk:
+
+1. 📧 Skriv inn din **e-postadresse**
+2. 🔐 Velg et **sterkt passord** (min. 8 tegn)
+3. ✅ Bekreft passordet
+4. ➡️ Klikk på **"Fullfør oppsett"**
+5. 🎉 Ferdig! Du kan nå logge inn
+
+⚠️ **Sikkerhetstips:** Bruk et unikt passord på minst 12 tegn (store bokstaver, små bokstaver, tall, symboler).
 
 ---
 
@@ -689,19 +724,15 @@ No navegador:
 - Painel: `http://O-TEU-IP:8437` ou `http://localhost:8437`
 - API: `http://O-TEU-IP:5829/api`
 
-**Login padrão**
+**Configuração inicial (Assistente de Configuração)**
 
-- Email: `admin@mcpanel.local`
-- Senha: `admin123`  
-➡️ Muda a senha depois do primeiro login!
+O **Assistente de Configuração** aparece automaticamente na primeira visita:
 
-**Problemas comuns**
+1. 📧 Introduz o teu **endereço de e-mail**
+2. 🔐 Escolhe uma **senha forte** (mín. 8 caracteres)
+3. ✅ Confirma a senha
+4. ➡️ Clica em **"Concluir Configuração"**
+5. 🎉 Pronto! Já podes fazer login
 
-- Verificar contêineres e logs:
-  ```bash
-  docker compose ps
-  docker compose logs -f
-  ```
-
----
+⚠️ **Dica de segurança:** Usa uma senha única com pelo menos 12 caracteres (maiúsculas, minúsculas, números, símbolos).
 
