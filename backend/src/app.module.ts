@@ -1,27 +1,30 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { ServersModule } from './servers/servers.module';
-import { Server } from './entities/server.entity';
+import { BackupsModule } from './backups/backups.module';
 import { User } from './entities/user.entity';
+import { Server } from './entities/server.entity';
+import { Backup } from './entities/backup.entity';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: './data/crumbpanel.db',
-      entities: [Server, User],
+      entities: [User, Server, Backup],
       synchronize: true,
       logging: false,
     }),
-    JwtModule.register({
-      global: true,
-      secret: process.env.JWT_SECRET || 'crumbpanel-secret-key-change-in-production',
-      signOptions: { expiresIn: '7d' },
-    }),
     AuthModule,
     ServersModule,
+    BackupsModule,
   ],
 })
 export class AppModule {}

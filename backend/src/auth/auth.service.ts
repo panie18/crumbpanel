@@ -55,13 +55,11 @@ export class AuthService {
     console.log('🚀 [AUTH] Setup data:', { username: setupData.username, email: setupData.email });
     
     try {
-      // Check if setup is already done
-      console.log('🔍 [AUTH] Checking current user count...');
       const userCount = await this.userRepository.count();
       console.log('🔍 [AUTH] Current user count:', userCount);
 
       if (userCount > 0) {
-        console.log('❌ [AUTH] Setup already completed - returning existing user');
+        console.log('❌ [AUTH] Setup already completed');
         const existingUser = await this.userRepository.findOne({ 
           where: {}, 
           order: { createdAt: 'ASC' } 
@@ -73,8 +71,7 @@ export class AuthService {
             email: existingUser.email,
           });
           
-          // WICHTIG: Korrekte Response-Struktur
-          const response = {
+          return {
             message: 'Setup was already completed, logging you in',
             user: {
               id: existingUser.id,
@@ -84,32 +81,26 @@ export class AuthService {
             },
             token,
           };
-          
-          console.log('✅ [AUTH] Returning existing user response:', response);
-          return response;
         }
       }
 
-      // Hash password
-      console.log('🔐 [AUTH] Hashing password...');
+      // Hash password properly with bcrypt
+      console.log('🔐 [AUTH] Hashing password with bcrypt...');
       const hashedPassword = await bcrypt.hash(setupData.password, 10);
+      console.log('✅ [AUTH] Password hashed successfully');
 
-      // Create admin user (KORREKTUR: create gibt einzelnes Objekt zurück)
       const adminUser = this.userRepository.create({
         username: setupData.username,
         email: setupData.email,
         password: hashedPassword,
-        role: 'admin',  // Kleinschreibung!
+        role: 'admin',
         twoFactorEnabled: false,
       });
 
       const savedUser = await this.userRepository.save(adminUser);
 
       console.log('✅ [AUTH] Admin user created with ID:', savedUser.id);
-      console.log('✅ [AUTH] Email:', savedUser.email);
-      console.log('✅ [AUTH] Setup completed successfully!');
 
-      // Generate JWT token
       const token = this.jwtService.sign({
         sub: savedUser.id,
         email: savedUser.email,
@@ -148,8 +139,12 @@ export class AuthService {
       }
       
       console.log(`🔍 [AUTH] User found: ${user.id}`);
+      console.log(`🔐 [AUTH] Comparing password...`);
       
-      if (user.password !== password) {
+      // Compare password with bcrypt
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      
+      if (!isPasswordValid) {
         console.log(`❌ [AUTH] Password mismatch for: ${email}`);
         throw new Error('Invalid credentials');
       }
