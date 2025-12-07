@@ -4,13 +4,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './auth/auth.module';
 import { ServersModule } from './servers/servers.module';
 import { Server } from './entities/server.entity';
+import { User } from './entities/user.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: './data/crumbpanel.db',
-      entities: [Server],
+      entities: [Server, User],
       synchronize: true,
       logging: false,
     }),

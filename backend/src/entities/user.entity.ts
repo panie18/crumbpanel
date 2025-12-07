@@ -11,26 +11,17 @@ export class User {
   @Column()
   username: string;
 
-  @Column({ nullable: true })
-  name: string;
-
   @Column()
   password: string;
 
-  @Column({ default: 'USER' })
-  role: string;
-
-  @Column({ nullable: true })
-  totpSecret: string;
+  @Column({ default: 'admin' })
+  role: 'admin' | 'moderator' | 'user';
 
   @Column({ default: false })
-  totpEnabled: boolean;
+  twoFactorEnabled: boolean;
 
   @Column({ nullable: true })
-  picture: string;
-
-  @Column({ nullable: true })
-  profilePicture: string;
+  twoFactorSecret: string;
 
   @CreateDateColumn()
   createdAt: Date;
