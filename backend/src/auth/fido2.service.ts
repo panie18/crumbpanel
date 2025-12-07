@@ -38,27 +38,21 @@ export class Fido2Service {
 
   /**
    * Generate credential request options (for authentication)
-   * Accepts either a userId string OR an array [userId, username]
+   * Flexible signature: accepts userId as string, or credentials array
    */
-  async generateCredentialRequestOptions(userId: string | string[], username?: string): Promise<any> {
-    // Handle array input: [userId, username]
-    if (Array.isArray(userId)) {
-      const [uid, uname] = userId;
-      console.log(`[Fido2Service] Generating credential request for user ${uid} (${uname})`);
-      return this.generateRequestOptions(uid);
-    }
+  async generateCredentialRequestOptions(userIdOrCredentials: string | any[], username?: string): Promise<any> {
+    // If it's an array, extract the first element as userId
+    const userId = Array.isArray(userIdOrCredentials) ? userIdOrCredentials[0] : userIdOrCredentials;
     
-    // Handle string input: userId
     console.log(`[Fido2Service] Generating credential request for user ${userId}`);
-    return this.generateRequestOptions(userId);
-  }
-
-  private generateRequestOptions(userId: string): any {
+    
     return {
       challenge: Buffer.from(Math.random().toString()).toString('base64'),
       timeout: 60000,
       userVerification: 'preferred',
-      allowCredentials: []
+      allowCredentials: Array.isArray(userIdOrCredentials) && userIdOrCredentials.length > 1 
+        ? userIdOrCredentials.slice(1) 
+        : []
     };
   }
 
