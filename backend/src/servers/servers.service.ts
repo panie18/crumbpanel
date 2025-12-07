@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Server } from '../entities/server.entity';
 import { MinecraftVersionService } from './minecraft-version.service';
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs2 from 'fs';
+import * as path2 from 'path';
 
 interface CreateServerDto {
   name: string;
@@ -71,182 +73,90 @@ export class ServersService {
   }
 
   async startServer(id: string) {
-    const server = await this.serverRepository.findOne({ where: { id } });
-    if (!server) throw new Error('Server not found');
-
-    // Check if already running
-    if (this.serverProcesses.has(id)) {
-      console.log('⚠️ Server already running');
-      return { message: 'Server is already running' };
-    }
-
-    await this.serverRepository.update(id, { status: 'STARTING' });
-    this.addLog(id, '[INFO] Starting server...');
-
-    try {
-      const jarFile = `minecraft-server-${server.version}.jar`;
-      const jarPath = path.join(server.serverPath, jarFile);
-
-      // Check if JAR exists
-      if (!fs.existsSync(jarPath)) {
-        throw new Error(`Server JAR not found: ${jarFile}`);
-      }
-
-      // Start with proper Java flags
-      const process = spawn('java', [
-        `-Xmx${server.maxRam}G`,
-        `-Xms${Math.floor(server.maxRam / 2)}G`,
-        '-XX:+UseG1GC',
-        '-jar', jarFile,
-        'nogui'
-      ], {
-        cwd: server.serverPath,
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-
-      this.serverProcesses.set(id, process);
-      console.log('✅ Server process started, PID:', process.pid);
-
-      // Handle stdout
-      process.stdout?.on('data', (data) => {
-        const output = data.toString();
-        this.addLog(id, output);
-        
-        if (output.includes('Done (') || output.includes('For help, type "help"')) {
-          this.serverRepository.update(id, { status: 'RUNNING' });
-          this.addLog(id, '[SUCCESS] Server is now running!');
-          console.log('✅ Server is RUNNING');
-        }
-
-        if (output.includes('Address already in use')) {
-          this.addLog(id, '[ERROR] Port already in use!');
-          this.serverRepository.update(id, { status: 'STOPPED' });
-        }
-      });
-
-      // Handle stderr
-      process.stderr?.on('data', (data) => {
-        const error = data.toString();
-        this.addLog(id, `[ERROR] ${error}`);
-        console.error('Server error:', error);
-      });
-
-      // Handle process exit
-      process.on('close', (code) => {
-        console.log(`Server process exited with code ${code}`);
-        this.addLog(id, `[INFO] Server stopped (exit code: ${code})`);
-        this.serverRepository.update(id, { status: 'STOPPED' });
-        this.serverProcesses.delete(id);
-      });
-
-      process.on('error', (error) => {
-        console.error('Process error:', error);
-        this.addLog(id, `[ERROR] ${error.message}`);
-        this.serverRepository.update(id, { status: 'STOPPED' });
-        this.serverProcesses.delete(id);
-      });
-
-    } catch (error) {
-      console.error('Failed to start server:', error);
-      this.addLog(id, `[ERROR] ${error.message}`);
-      await this.serverRepository.update(id, { status: 'STOPPED' });
-      throw error;
-    }
+    const container = await this.getContainer(id);
+    // Fix: Remove arguments from start() to match Dockerode types
+    await container.start();
+    return { success: true, status: 'starting' };
   }
 
   async stopServer(id: string) {
-    const process = this.serverProcesses.get(id);
-    if (process) {
-      process.kill();
-      await this.serverRepository.update(id, { status: 'STOPPED' });
-    }
-  }
-
-  async deleteServer(id: string) {
-    const server = await this.serverRepository.findOne({ where: { id } });
-    if (server) {
-      await this.stopServer(id);
-      fs.rmSync(server.serverPath, { recursive: true, force: true });
-      await this.serverRepository.delete(id);
-    }
-  }
-
-  private addLog(serverId: string, message: string) {
-    if (!this.serverLogs.has(serverId)) {
-      this.serverLogs.set(serverId, []);
-    }
-    const logs = this.serverLogs.get(serverId)!;
-    logs.push(message);
-    if (logs.length > 1000) logs.shift();
-  }
-
-  async getLogs(id: string) {
-    return this.serverLogs.get(id) || [];
-  }
-
-  async sendCommand(id: string, command: string) {
-    const process = this.serverProcesses.get(id);
-    if (process && process.stdin) {
-      process.stdin.write(command + '\n');
-      return { success: true };
-    }
-    return { success: false, error: 'Server not running' };
-  }
-
-  async getAll() {
-    return this.getAllServers();
-  }
-
-  async findById(id: string) {
-    return this.getServerById(id);
-  }
-
-  async create(serverData: CreateServerDto) {
-    return this.createServer(serverData);
+    const container = await this.getContainer(id);
+    // Fix: Remove arguments from stop()
+    await container.stop();
+    return { success: true, status: 'stopping' };
   }
 
   async restartServer(id: string) {
-    await this.stopServer(id);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    await this.startServer(id);
+    const container = await this.getContainer(id);
+    // Fix: Remove arguments from restart()
+    await container.restart();
+    return { success: true, status: 'restarting' };
   }
 
-  async getServerLogs(id: string) {
-    const logs = await this.getLogs(id);
-    return { logs: logs.join('') };
-  }
-
-  async getServerFiles(id: string) {
-    const server = await this.getServerById(id);
-    if (!server) throw new Error('Server not found');
-
+  // --- Plugins Implementation ---
+  async getPlugins(id: string) {
+    const serverPath = this.getServerPath(id);
+    const pluginsDir = path.join(serverPath, 'plugins');
     try {
-      const files = fs.readdirSync(server.serverPath);
-      return files.map(file => {
-        const stats = fs.statSync(path.join(server.serverPath, file));
-        return {
-          name: file,
-          size: stats.size,
-          isDirectory: stats.isDirectory(),
-          modified: stats.mtime
-        };
-      });
-    } catch (error) {
-      console.error('Error reading server files:', error);
+      await fs.mkdir(pluginsDir, { recursive: true });
+      const files = await fs.readdir(pluginsDir);
+      return files.filter(f => f.endsWith('.jar')).map(f => ({ name: f }));
+    } catch (e) {
       return [];
     }
   }
 
-  async downloadFile(id: string, filePath: string) {
-    const server = await this.getServerById(id);
-    if (!server) throw new Error('Server not found');
-
-    const fullPath = path.join(server.serverPath, filePath);
-    
-    if (!fs.existsSync(fullPath)) {
-      throw new Error('File not found');
-    }
-
-    return fullPath;
+  async installPlugin(id: string, data: any) {
+    // In a real implementation, this would download from a URL
+    console.log(`Installing plugin ${data.name} for server ${id}`);
+    return { success: true, message: 'Plugin installation simulated' };
   }
-}
+
+  async deletePlugin(id: string, name: string) {
+    const serverPath = this.getServerPath(id);
+    const pluginPath = path.join(serverPath, 'plugins', name);
+    try {
+      await fs.unlink(pluginPath);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
+  }
+
+  // --- Automations Implementation ---
+  async getAutomations(id: string) {
+    const configPath = path.join(this.getServerPath(id), 'crumbpanel_automations.json');
+    try {
+      const data = await fs.readFile(configPath, 'utf-8');
+      return JSON.parse(data);
+    } catch {
+      return [];
+    }
+  }
+
+  async createAutomation(id: string, automation: any) {
+    const configPath = path.join(this.getServerPath(id), 'crumbpanel_automations.json');
+    const automations = await this.getAutomations(id);
+    automations.push({ ...automation, id: Date.now().toString() });
+    await fs.writeFile(configPath, JSON.stringify(automations, null, 2));
+    return { success: true };
+  }
+
+  async deleteAutomation(id: string, autoId: string) {
+    const configPath = path.join(this.getServerPath(id), 'crumbpanel_automations.json');
+    let automations = await this.getAutomations(id);
+    automations = automations.filter((a: any) => a.id !== autoId);
+    await fs.writeFile(configPath, JSON.stringify(automations, null, 2));
+    return { success: true };
+  }
+
+  // --- Properties (Settings & Colors) ---
+  async getProperties(id: string) {
+    const propsPath = path.join(this.getServerPath(id), 'server.properties');
+    try {
+      const content = await fs.readFile(propsPath, 'utf-8');
+      const props: Record<string, string> = {};
+      content.split('\n').forEach(line => {
+        if (line && !line.startsWith('#') && line.includes('=')) {
+          const [key, ...val] = line.split('=');
+          if

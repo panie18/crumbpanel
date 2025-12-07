@@ -40,9 +40,16 @@ export class MinecraftVersionService {
     return manifest.versions;
   }
 
-  async getReleaseVersions() {
-    const manifest = await this.getVersionManifest();
-    return manifest.versions.filter((v: any) => v.type === 'release');
+  async getReleaseVersions(limit: number = 30) {
+    try {
+      const manifest = await this.getVersionManifest();
+      return manifest.versions
+        .filter((v: any) => v.type === 'release')
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Failed to fetch versions', error);
+      return [];
+    }
   }
 
   async searchVersions(query: string, type?: string) {
