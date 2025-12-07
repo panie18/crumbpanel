@@ -313,7 +313,7 @@ const ServerDetails = () => {
                     type="checkbox" 
                     id="pvp"
                     checked={properties['pvp'] === 'true'} 
-                    onChange={(e) => handlePropChange('pvp', String(e.target.checked))}
+                    onChange={(e) => handlePropChange('pvp', e.target.checked ? 'true' : 'false')}
                     className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="pvp" className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable PvP</label>
