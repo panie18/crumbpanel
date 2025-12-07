@@ -27,6 +27,14 @@ const api = {
     if (!res.ok) throw new Error(`API Error: ${res.status}`);
     return { data: await res.json() };
   },
+  delete: async (endpoint: string) => {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (!res.ok) throw new Error(`API Error: ${res.status}`);
+    return { data: await res.json() };
+  },
 };
 // -----------------------------------------------------------
 
@@ -42,6 +50,12 @@ const ServerDetails: React.FC = () => {
   const [properties, setProperties] = useState<any>({});
   const [command, setCommand] = useState('');
   const logsEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Modal States
+  const [showPluginModal, setShowPluginModal] = useState(false);
+  const [showAutomationModal, setShowAutomationModal] = useState(false);
+  const [newPlugin, setNewPlugin] = useState({ name: '', url: '' });
+  const [newAutomation, setNewAutomation] = useState({ name: '', trigger: 'manual', action: '', command: '' });
 
   // Basis‑Daten + Polling
   useEffect(() => {
@@ -137,6 +151,56 @@ const ServerDetails: React.FC = () => {
 
   const handlePropChange = (key: string, value: string) => {
     setProperties((prev: any) => ({ ...prev, [key]: value }));
+  };
+
+  // --- Plugin Actions ---
+  const handleInstallPlugin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPlugin.name) return;
+    try {
+      await api.post(`/servers/${id}/plugins`, newPlugin);
+      setShowPluginModal(false);
+      setNewPlugin({ name: '', url: '' });
+      loadPlugins();
+      alert('Plugin installed successfully!');
+    } catch {
+      alert('Failed to install plugin');
+    }
+  };
+
+  const handleDeletePlugin = async (name: string) => {
+    if (!confirm(`Delete plugin "${name}"?`)) return;
+    try {
+      await api.delete(`/servers/${id}/plugins/${name}`);
+      loadPlugins();
+    } catch {
+      alert('Failed to delete plugin');
+    }
+  };
+
+  // --- Automation Actions ---
+  const handleCreateAutomation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAutomation.name) return;
+    try {
+      await api.post(`/servers/${id}/automations`, newAutomation);
+      setShowAutomationModal(false);
+      setNewAutomation({ name: '', trigger: 'manual', action: '', command: '' });
+      loadAutomations();
+      alert('Automation created successfully!');
+    } catch {
+      alert('Failed to create automation');
+    }
+  };
+
+  const handleDeleteAutomation = async (autoId: string) => {
+    if (!confirm('Delete this automation?')) return;
+    try {
+      await api.delete(`/servers/${id}/automations/${autoId}`);
+      loadAutomations();
+    } catch {
+      alert('Failed to delete automation');
+    }
   };
 
   if (!server) {
@@ -247,8 +311,11 @@ const ServerDetails: React.FC = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Installed Plugins</h2>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
-                Install New Plugin
+              <button
+                onClick={() => setShowPluginModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+              >
+                <span>+</span> Install Plugin
               </button>
             </div>
             {plugins.length === 0 ? (
@@ -260,10 +327,15 @@ const ServerDetails: React.FC = () => {
                 {plugins.map((plugin, idx) => (
                   <div
                     key={idx}
-                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg flex justify-between items-center bg-gray-50 dark:bg-gray-900"
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg flex justify-between items-center bg-gray-50 dark:bg-gray-900 hover:shadow-md transition-shadow"
                   >
                     <span className="font-medium truncate">{plugin.name}</span>
-                    <button className="text-red-500 hover:text-red-700 text-sm">🗑️</button>
+                    <button
+                      onClick={() => handleDeletePlugin(plugin.name)}
+                      className="text-red-500 hover:text-red-700 p-2"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 ))}
               </div>
@@ -276,32 +348,50 @@ const ServerDetails: React.FC = () => {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold">Automations</h2>
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
-                Create Task
+              <button
+                onClick={() => setShowAutomationModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+              >
+                <span>+</span> Create Automation
               </button>
             </div>
-            <div className="space-y-4">
-              {automations.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-                  No automations configured.
-                </div>
-              ) : (
-                automations.map((auto, idx) => (
+            {automations.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
+                No automations configured.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {automations.map((auto, idx) => (
                   <div
                     key={idx}
-                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg flex justify-between items-center"
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 hover:shadow-md transition-shadow"
                   >
-                    <div>
-                      <h3 className="font-bold">{auto.name || 'Untitled Task'}</h3>
-                      <p className="text-sm text-gray-500">
-                        Trigger: {auto.trigger} • Action: {auto.action}
-                      </p>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-lg">{auto.name || 'Untitled'}</h3>
+                      <button
+                        onClick={() => handleDeleteAutomation(auto.id)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <button className="text-red-500 hover:text-red-700 text-sm">Delete</button>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      <p>
+                        <span className="font-semibold">Trigger:</span> {auto.trigger}
+                      </p>
+                      <p>
+                        <span className="font-semibold">Action:</span> {auto.action}
+                      </p>
+                      {auto.command && (
+                        <p className="font-mono bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded text-xs">
+                          {auto.command}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -318,7 +408,6 @@ const ServerDetails: React.FC = () => {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Basic */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm mb-1">Server Name (MOTD)</label>
@@ -357,7 +446,6 @@ const ServerDetails: React.FC = () => {
                 </div>
               </div>
 
-              {/* Advanced */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm mb-1">Max Players</label>
@@ -394,6 +482,127 @@ const ServerDetails: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Plugin Modal */}
+      {showPluginModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-4">Install Plugin</h3>
+            <form onSubmit={handleInstallPlugin} className="space-y-4">
+              <div>
+                <label className="block text-sm mb-1">Plugin Name</label>
+                <input
+                  type="text"
+                  value={newPlugin.name}
+                  onChange={(e) => setNewPlugin({ ...newPlugin, name: e.target.value })}
+                  className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Download URL (optional)</label>
+                <input
+                  type="url"
+                  value={newPlugin.url}
+                  onChange={(e) => setNewPlugin({ ...newPlugin, url: e.target.value })}
+                  className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+                >
+                  Install
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPluginModal(false)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Automation Modal */}
+      {showAutomationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-4">Create Automation</h3>
+            <form onSubmit={handleCreateAutomation} className="space-y-4">
+              <div>
+                <label className="block text-sm mb-1">Name</label>
+                <input
+                  type="text"
+                  value={newAutomation.name}
+                  onChange={(e) => setNewAutomation({ ...newAutomation, name: e.target.value })}
+                  className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Trigger</label>
+                <select
+                  value={newAutomation.trigger}
+                  onChange={(e) => setNewAutomation({ ...newAutomation, trigger: e.target.value })}
+                  className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                >
+                  <option value="manual">Manual</option>
+                  <option value="startup">Server Startup</option>
+                  <option value="shutdown">Server Shutdown</option>
+                  <option value="interval">Every X Minutes</option>
+                  <option value="player_join">Player Join</option>
+                  <option value="player_leave">Player Leave</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Action</label>
+                <select
+                  value={newAutomation.action}
+                  onChange={(e) => setNewAutomation({ ...newAutomation, action: e.target.value })}
+                  className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                >
+                  <option value="command">Run Command</option>
+                  <option value="backup">Create Backup</option>
+                  <option value="restart">Restart Server</option>
+                  <option value="notification">Send Notification</option>
+                </select>
+              </div>
+              {newAutomation.action === 'command' && (
+                <div>
+                  <label className="block text-sm mb-1">Command</label>
+                  <input
+                    type="text"
+                    value={newAutomation.command}
+                    onChange={(e) => setNewAutomation({ ...newAutomation, command: e.target.value })}
+                    placeholder="say Hello World"
+                    className="w-full p-2 rounded border border-gray-300 dark:border-gray-600 bg-transparent font-mono text-sm"
+                  />
+                </div>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAutomationModal(false)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
