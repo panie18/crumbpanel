@@ -156,16 +156,36 @@ export class ServersController {
   @Get('versions/latest')
   async getLatestVersion() {
     console.log('🔍 [CONTROLLER] Getting latest Minecraft version...');
-    return {
-      release: await this.versionService.getLatestReleaseVersion(),
-      snapshot: await this.versionService.getLatestSnapshotVersion()
-    };
+    try {
+      const release = await this.versionService.getLatestReleaseVersion();
+      const snapshot = await this.versionService.getLatestSnapshotVersion();
+      console.log('✅ [CONTROLLER] Latest versions:', { release, snapshot });
+      return { release, snapshot };
+    } catch (error) {
+      console.error('❌ [CONTROLLER] Failed to get latest version:', error);
+      // Fallback
+      return { release: '1.21.4', snapshot: '24w14a' };
+    }
   }
 
   @Get('versions/all')
   async getAllVersions() {
     console.log('📋 [CONTROLLER] Getting all Minecraft versions...');
-    return this.versionService.getReleaseVersions();
+    try {
+      const versions = await this.versionService.getReleaseVersions();
+      console.log(`✅ [CONTROLLER] Found ${versions.length} versions`);
+      return versions;
+    } catch (error) {
+      console.error('❌ [CONTROLLER] Failed to get versions:', error);
+      // Fallback
+      return [
+        { id: '1.21.4', type: 'release' },
+        { id: '1.21.3', type: 'release' },
+        { id: '1.21.1', type: 'release' },
+        { id: '1.20.6', type: 'release' },
+        { id: '1.20.4', type: 'release' }
+      ];
+    }
   }
 
   @Get('versions/search')

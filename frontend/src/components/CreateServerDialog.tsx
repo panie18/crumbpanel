@@ -54,49 +54,56 @@ export default function CreateServerDialog({ open, onOpenChange }: CreateServerD
   const fetchMinecraftVersions = async () => {
     setLoadingVersions(true);
     try {
-      // Use our backend API that fetches from Mojang
-      const latestResponse = await versionsApi.getLatest();
-      const versionsResponse = await versionsApi.getAll();
+      const API_URL = window.location.hostname === 'localhost' 
+        ? 'http://localhost:5829/api'
+        : '/api';
+      
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      
+      console.log('📋 [VERSIONS] Fetching from:', `${API_URL}/servers/versions/latest`);
+      
+      // Get latest version
+      const latestResponse = await axios.get(`${API_URL}/servers/versions/latest`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        timeout: 10000
+      });
+      
+      // Get all versions
+      const versionsResponse = await axios.get(`${API_URL}/servers/versions/all`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        timeout: 10000
+      });
       
       const latest = latestResponse.data.release;
       const versions = versionsResponse.data;
       
-      console.log('📋 [VERSIONS] Latest Minecraft version from Backend:', latest);
-      console.log('📋 [VERSIONS] All versions:', versions.map((v: any) => v.id).join(', '));
+      console.log('✅ [VERSIONS] Latest:', latest);
+      console.log('✅ [VERSIONS] All versions:', versions.length);
       
       setLatestVersion(latest);
       setMinecraftVersions(versions);
       setFormData(prev => ({ ...prev, version: latest }));
       
-      toast.success(`Latest Minecraft version: ${latest}`);
+      toast.success(`✅ Minecraft ${latest} loaded`);
       
-    } catch (error) {
-      console.error('❌ [VERSIONS] Failed to fetch versions from backend:', error);
+    } catch (error: any) {
+      console.error('❌ [VERSIONS] Failed to fetch:', error);
       
-      // Fallback to direct Mojang API
-      try {
-        console.log('🔄 [VERSIONS] Trying direct Mojang API...');
-        const response = await axios.get('https://launchermeta.mojang.com/mc/game/version_manifest.json');
-        const versions = response.data.versions;
-        const releaseVersions = versions.filter((v: any) => v.type === 'release').slice(0, 15);
-        const latest = releaseVersions[0]?.id || '1.21.4';
-        
-        console.log('📋 [VERSIONS] Latest from Mojang direct:', latest);
-        
-        setLatestVersion(latest);
-        setMinecraftVersions(releaseVersions);
-        setFormData(prev => ({ ...prev, version: latest }));
-        
-        toast.success(`Using Minecraft ${latest} (from Mojang)`);
-      } catch (fallbackError) {
-        console.error('❌ [VERSIONS] Fallback also failed:', fallbackError);
-        toast.error('Failed to load Minecraft versions. Using default.');
-        
-        // Ultimate fallback
-        const fallbackVersion = '1.21.4';
-        setLatestVersion(fallbackVersion);
-        setFormData(prev => ({ ...prev, version: fallbackVersion }));
-      }
+      // Fallback versions
+      const fallbackVersions = [
+        { id: '1.21.4', type: 'release' },
+        { id: '1.21.3', type: 'release' },
+        { id: '1.21.1', type: 'release' },
+        { id: '1.20.6', type: 'release' },
+        { id: '1.20.4', type: 'release' }
+      ];
+      
+      setLatestVersion('1.21.4');
+      setMinecraftVersions(fallbackVersions);
+      setFormData(prev => ({ ...prev, version: '1.21.4' }));
+      
+      toast.error('Could not load Minecraft versions from Mojang. Using fallback.');
+      
     } finally {
       setLoadingVersions(false);
     }
